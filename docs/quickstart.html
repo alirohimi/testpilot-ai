@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quickstart — TestPilot AI Docs</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root { --bg: #0b0f1a; --surface: #111827; --surface2: #1a2236; --border: #2a3450; --text: #e2e8f0; --muted: #94a3b8; --accent: #6366f1; --accent2: #818cf8; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); display: flex; min-height: 100vh; }
+    a { color: var(--accent2); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .sidebar { width: 260px; flex-shrink: 0; background: var(--surface); border-right: 1px solid var(--border); padding: 24px 0; position: fixed; top: 0; left: 0; bottom: 0; overflow-y: auto; }
+    .sidebar-logo { font-size: 1.1rem; font-weight: 800; padding: 0 20px 20px; border-bottom: 1px solid var(--border); margin-bottom: 16px; background: linear-gradient(135deg, var(--accent2), #a78bfa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .sidebar-nav { padding: 8px 12px; }
+    .nav-group-label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1.5px; color: var(--muted); padding: 12px 8px 6px; font-weight: 600; }
+    .nav-item { display: block; padding: 7px 12px; border-radius: 6px; font-size: 0.88rem; color: var(--muted); transition: all 0.15s; }
+    .nav-item:hover, .nav-item.active { background: var(--surface2); color: var(--text); text-decoration: none; }
+    .nav-item.active { color: var(--accent2); }
+    .main { flex: 1; margin-left: 260px; padding: 48px 64px; max-width: 900px; }
+    .main h1 { font-size: 2.2rem; font-weight: 800; margin-bottom: 8px; letter-spacing: -1px; }
+    .main .subtitle { color: var(--muted); margin-bottom: 32px; }
+    .main h2 { font-size: 1.4rem; font-weight: 700; margin: 40px 0 12px; color: var(--text); border-top: 1px solid var(--border); padding-top: 20px; }
+    .main h3 { font-size: 1.1rem; font-weight: 600; margin: 24px 0 8px; }
+    .main p { color: var(--muted); margin-bottom: 16px; line-height: 1.7; }
+    .main ul, .main ol { color: var(--muted); padding-left: 24px; margin-bottom: 16px; }
+    .main li { margin-bottom: 6px; }
+    .main code { font-family: 'JetBrains Mono', monospace; background: var(--surface2); padding: 2px 7px; border-radius: 4px; font-size: 0.88em; color: var(--accent2); }
+    .main pre { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 16px 20px; overflow-x: auto; margin: 16px 0; }
+    .main pre code { background: none; padding: 0; color: var(--text); }
+    .main table { width: 100%; border-collapse: collapse; margin: 16px 0; }
+    .main th, .main td { padding: 10px 14px; border: 1px solid var(--border); text-align: left; font-size: 0.9rem; }
+    .main th { background: var(--surface2); color: var(--text); font-weight: 600; }
+    .main td { color: var(--muted); }
+    .main td code { background: none; padding: 0; }
+    .callout { background: rgba(99,102,241,0.08); border-left: 3px solid var(--accent); padding: 14px 18px; border-radius: 0 8px 8px 0; margin: 20px 0; }
+    .back-link { display: inline-block; margin-bottom: 24px; color: var(--muted); font-size: 0.85rem; }
+    .back-link:hover { color: var(--accent2); }
+    @media (max-width: 768px) { .sidebar { display: none; } .main { margin-left: 0; padding: 32px 20px; } }
+  </style>
+</head>
+<body>
+  <aside class="sidebar">
+    <div class="sidebar-logo">TestPilot <span>AI</span> Docs</div>
+    <nav class="sidebar-nav">
+      <div class="nav-group-label">Getting Started</div>
+      <a href="/testpilot-ai/docs/quickstart.html" class="nav-item active">Quickstart</a>
+      <a href="/testpilot-ai/docs/plugin-config.html" class="nav-item">Plugin Config</a>
+      <div class="nav-group-label">Reference</div>
+      <a href="/testpilot-ai/docs/api.html" class="nav-item">API Reference</a>
+      <a href="/testpilot-ai/docs/triage-rules.html" class="nav-item">Triage Rules</a>
+      <div class="nav-group-label">More</div>
+      <a href="/testpilot-ai/" class="nav-item">Back to Website</a>
+      <a href="https://github.com" class="nav-item">GitHub</a>
+    </nav>
+  </aside>
+  <main class="main">
+    <a href="/testpilot-ai/" class="back-link">← Back to TestPilot AI</a>
+    <h1>Quickstart</h1>
+    <p class="subtitle">Get TestPilot AI triaging your test failures in under 5 minutes.</p>
+
+    <h2>1. Create an account</h2>
+    <p>Sign up at <a href="/testpilot-ai/auth.html">TestPilot AI</a> or via API.</p>
+
+    <h2>2. Get an API key</h2>
+    <p>After signing in, create a key from the <a href="/testpilot-ai/dashboard.html">dashboard</a> or via API.</p>
+    <p>Copy the <code>tp_...</code> key — it's shown <strong>only once</strong>.</p>
+
+    <h2>3. Install the pytest plugin</h2>
+    <pre><code>pip install testpilot-ai-plugin[pytest]</code></pre>
+
+    <h2>4. Configure</h2>
+    <pre><code>export TESTPILOT_API_KEY="tp_your_key_here"</code></pre>
+    <p>Or add to <code>pytest.ini</code> / <code>pyproject.toml</code>:</p>
+    <pre><code>[pytest]
+addopts = --triate --scrub</code></pre>
+
+    <h2>5. Run your tests</h2>
+    <pre><code>pytest --triate --scrub</code></pre>
+    <p>You'll see:</p>
+    <pre><code>✓ classified 12 failures | ✓ scrubbed 84 PII tokens
+→ Triaged to /triage/results.json</code></pre>
+
+    <h2>What's next?</h2>
+    <ul>
+      <li>Read the <a href="/testpilot-ai/docs/plugin-config.html">Plugin Configuration</a> guide</li>
+      <li>Explore the <a href="/testpilot-ai/docs/api.html">API Reference</a></li>
+      <li>Learn about <a href="/testpilot-ai/docs/triage-rules.html">Triage Rules</a></li>
+    </ul>
+  </main>
+</body>
+</html>

@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TestPilot AI — Sign In</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #fafafa;
+      --bg-elevated: #ffffff;
+      --bg-subtle: #f5f5f5;
+      --text-primary: #111111;
+      --text-secondary: #666666;
+      --text-muted: #999999;
+      --border: #e5e5e5;
+      --border-strong: #d4d4d4;
+      --accent: #111111;
+      --accent-soft: rgba(17, 17, 17, 0.08);
+      --green: #16a34a;
+      --green-soft: rgba(22, 163, 74, 0.1);
+      --red: #dc2626;
+      --red-soft: rgba(220, 38, 38, 0.1);
+      --radius: 8px;
+      --radius-lg: 12px;
+    }
+    
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg);
+      color: var(--text-primary);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    
+    a { color: var(--text-secondary); text-decoration: none; }
+    a:hover { color: var(--text-primary); }
+    
+    /* LOGO */
+    .logo {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+    
+    .logo-mark {
+      width: 40px; height: 40px; background: var(--accent);
+      border-radius: 10px; display: inline-flex; align-items: center; justify-content: center;
+      margin-bottom: 12px;
+    }
+    
+    .logo-mark svg { width: 22px; height: 22px; }
+    
+    .logo h1 {
+      font-size: 1.25rem; font-weight: 600; letter-spacing: -0.5px;
+    }
+    
+    .logo p {
+      font-size: 0.875rem; color: var(--text-secondary); margin-top: 4px;
+    }
+    
+    /* CARD */
+    .card {
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 32px;
+      width: 100%;
+      max-width: 400px;
+    }
+    
+    .tabs {
+      display: flex;
+      gap: 4px;
+      background: var(--bg-subtle);
+      border-radius: var(--radius);
+      padding: 4px;
+      margin-bottom: 24px;
+    }
+    
+    .tab {
+      flex: 1;
+      padding: 8px 16px;
+      text-align: center;
+      border-radius: 6px;
+      font-size: 0.875rem;
+      font-weight: 500;
+      cursor: pointer;
+      color: var(--text-secondary);
+      transition: all 0.15s;
+      border: none;
+      background: none;
+    }
+    
+    .tab.active {
+      background: var(--bg-elevated);
+      color: var(--text-primary);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    }
+    
+    .form-group {
+      margin-bottom: 16px;
+    }
+    
+    .form-group label {
+      display: block;
+      font-size: 0.8125rem;
+      font-weight: 500;
+      color: var(--text-secondary);
+      margin-bottom: 6px;
+    }
+    
+    .form-group input {
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      background: var(--bg-elevated);
+      color: var(--text-primary);
+      font-size: 0.9375rem;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    
+    .form-group input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-soft);
+    }
+    
+    .form-group input::placeholder {
+      color: var(--text-muted);
+    }
+    
+    .btn {
+      width: 100%;
+      padding: 10px 16px;
+      border-radius: var(--radius);
+      border: none;
+      font-size: 0.9375rem;
+      font-weight: 500;
+      font-family: inherit;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    
+    .btn-primary {
+      background: var(--accent);
+      color: white;
+    }
+    
+    .btn-primary:hover {
+      opacity: 0.9;
+    }
+    
+    .btn-secondary {
+      background: var(--bg-subtle);
+      color: var(--text-primary);
+      border: 1px solid var(--border);
+      margin-top: 12px;
+    }
+    
+    .btn-secondary:hover {
+      background: var(--border);
+    }
+    
+    .error-msg {
+      color: var(--red);
+      font-size: 0.8125rem;
+      margin-bottom: 16px;
+      padding: 10px 12px;
+      background: var(--red-soft);
+      border: 1px solid rgba(220, 38, 38, 0.15);
+      border-radius: var(--radius);
+      display: none;
+    }
+    
+    .success-msg {
+      color: var(--green);
+      font-size: 0.8125rem;
+      margin-bottom: 16px;
+      padding: 10px 12px;
+      background: var(--green-soft);
+      border: 1px solid rgba(22, 163, 74, 0.15);
+      border-radius: var(--radius);
+      display: none;
+    }
+    
+    .key-display {
+      background: var(--bg-subtle);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 12px 16px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8125rem;
+      word-break: break-all;
+      color: var(--text-primary);
+      margin: 16px 0;
+      display: none;
+      text-align: center;
+    }
+    
+    .form-panel {
+      display: none;
+    }
+    
+    .form-panel.active {
+      display: block;
+    }
+    
+    .divider {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin: 24px 0;
+      color: var(--text-muted);
+      font-size: 0.75rem;
+    }
+    
+    .divider::before,
+    .divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+    
+    .back-link {
+      text-align: center;
+      margin-top: 24px;
+      font-size: 0.8125rem;
+      color: var(--text-muted);
+    }
+    
+    .back-link a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div class="logo">
+    <div class="logo-mark">
+      <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+        <path d="M9 12l2 2 4-4"/>
+        <circle cx="12" cy="12" r="10"/>
+      </svg>
+    </div>
+    <h1>TestPilot AI</h1>
+    <p>Access your triage dashboard</p>
+  </div>
+
+  <div class="card">
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('login')">Sign In</button>
+      <button class="tab" onclick="switchTab('register')">Register</button>
+    </div>
+
+    <div id="error-msg" class="error-msg"></div>
+    <div id="success-msg" class="success-msg"></div>
+
+    <!-- LOGIN -->
+    <div id="login-panel" class="form-panel active">
+      <form onsubmit="handleLogin(event)">
+        <div class="form-group">
+          <label>Email</label>
+          <input type="email" id="login-email" required placeholder="you@example.com">
+        </div>
+        <div class="form-group">
+          <label>Password</label>
+          <input type="password" id="login-password" required placeholder="••••••••">
+        </div>
+        <button type="submit" class="btn btn-primary">Sign In</button>
+      </form>
+      <div class="divider">or</div>
+      <a href="/" class="btn btn-secondary">Back to website</a>
+    </div>
+
+    <!-- REGISTER -->
+    <div id="register-panel" class="form-panel">
+      <form onsubmit="handleRegister(event)">
+        <div class="form-group">
+          <label>Full Name</label>
+          <input type="text" id="reg-name" placeholder="Jane Doe">
+        </div>
+        <div class="form-group">
+          <label>Email</label>
+          <input type="email" id="reg-email" required placeholder="you@example.com">
+        </div>
+        <div class="form-group">
+          <label>Password</label>
+          <input type="password" id="reg-password" required placeholder="Min 8 characters" minlength="8">
+        </div>
+        <button type="submit" class="btn btn-primary">Create Account</button>
+      </form>
+      <div class="divider">or</div>
+      <a href="/" class="btn btn-secondary">Back to website</a>
+    </div>
+
+    <!-- API KEY RESULT -->
+    <div id="key-panel" class="form-panel" style="text-align:center;">
+      <p style="color:var(--text-secondary);font-size:0.875rem;margin-bottom:8px;">Your API key (shown once):</p>
+      <div class="key-display" id="api-key-display"></div>
+      <p style="color:var(--red);font-size:0.8125rem;margin-bottom:16px;">Save this key — it won't be shown again.</p>
+      <button class="btn btn-primary" onclick="copyKey()">Copy Key</button>
+      <button class="btn btn-secondary" onclick="goToDashboard()" style="margin-top:8px;">Go to Dashboard</button>
+    </div>
+  </div>
+
+  <script>
+    const API = '/api/v1';
+    let currentToken = localStorage.getItem('tp_token') || '';
+    let currentUserData = null;
+
+    function switchTab(tab) {
+      document.querySelectorAll('.tab').forEach((t, i) => {
+        t.classList.toggle('active', (tab === 'login' && i === 0) || (tab === 'register' && i === 1));
+      });
+      document.getElementById('login-panel').classList.toggle('active', tab === 'login');
+      document.getElementById('register-panel').classList.toggle('active', tab === 'register');
+      hideMessages();
+    }
+
+    function showError(msg) {
+      const el = document.getElementById('error-msg');
+      el.textContent = msg; el.style.display = 'block';
+      document.getElementById('success-msg').style.display = 'none';
+    }
+    
+    function showSuccess(msg) {
+      const el = document.getElementById('success-msg');
+      el.textContent = msg; el.style.display = 'block';
+      document.getElementById('error-msg').style.display = 'none';
+    }
+    
+    function hideMessages() {
+      document.getElementById('error-msg').style.display = 'none';
+      document.getElementById('success-msg').style.display = 'none';
+    }
+
+    async function handleLogin(e) {
+      e.preventDefault();
+      const email = document.getElementById('login-email').value;
+      const password = document.getElementById('login-password').value;
+      try {
+        const r = await fetch(`${API}/auth/login`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+        const data = await r.json();
+        if (!r.ok) throw new Error(data.detail || 'Login failed');
+        localStorage.setItem('tp_token', data.access_token);
+        currentToken = data.access_token;
+        currentUserData = data;
+        showSuccess('Signed in! Creating your first key…');
+        setTimeout(() => createFirstKey(), 800);
+      } catch (err) { showError(err.message); }
+    }
+
+    async function handleRegister(e) {
+      e.preventDefault();
+      const name = document.getElementById('reg-name').value;
+      const email = document.getElementById('reg-email').value;
+      const password = document.getElementById('reg-password').value;
+      try {
+        const r = await fetch(`${API}/auth/register`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password, full_name: name })
+        });
+        const data = await r.json();
+        if (!r.ok) throw new Error(data.detail || 'Registration failed');
+        localStorage.setItem('tp_token', data.access_token);
+        currentToken = data.access_token;
+        currentUserData = data;
+        showSuccess('Account created! Your API key:');
+        setTimeout(() => createFirstKey(), 800);
+      } catch (err) { showError(err.message); }
+    }
+
+    async function createFirstKey() {
+      try {
+        const r = await fetch(`${API}/keys`, {
+          method: 'POST', headers: {
+            'Authorization': `Bearer ${currentToken}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ name: 'My Key', tier: 'free' })
+        });
+        const data = await r.json();
+        if (!r.ok) throw new Error(data.detail || 'Failed to create key');
+        document.getElementById('login-panel').classList.remove('active');
+        document.getElementById('register-panel').classList.remove('active');
+        document.querySelector('.tabs').style.display = 'none';
+        const keyPanel = document.getElementById('key-panel');
+        keyPanel.classList.add('active');
+        const display = document.getElementById('api-key-display');
+        display.textContent = data.key; display.style.display = 'block';
+        localStorage.setItem('tp_api_key', data.key);
+        showSuccess(`Key created: ${data.key}`);
+      } catch (err) { showError(err.message); }
+    }
+
+    function copyKey() {
+      const key = document.getElementById('api-key-display').textContent;
+      navigator.clipboard.writeText(key);
+      showSuccess('Copied to clipboard!');
+    }
+
+    function goToDashboard() {
+      window.location.href = '/dashboard.html';
+    }
+
+    // If already logged in, redirect
+    if (currentToken) {
+      window.location.href = '/dashboard.html';
+    }
+  </script>
+</body>
+</html>

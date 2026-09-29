@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard — TestPilot AI</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #fafafa;
+      --bg-elevated: #ffffff;
+      --bg-subtle: #f5f5f5;
+      --bg-hover: #efefef;
+      --text-primary: #111111;
+      --text-secondary: #666666;
+      --text-muted: #999999;
+      --border: #e5e5e5;
+      --border-strong: #d4d4d4;
+      --accent: #111111;
+      --accent-soft: rgba(17, 17, 17, 0.08);
+      --green: #16a34a;
+      --green-soft: rgba(22, 163, 74, 0.1);
+      --red: #dc2626;
+      --red-soft: rgba(220, 38, 38, 0.1);
+      --radius: 8px;
+      --radius-lg: 12px;
+    }
+    
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg);
+      color: var(--text-primary);
+      min-height: 100vh;
+    }
+    
+    a { color: inherit; text-decoration: none; }
+    
+    /* TOPBAR */
+    .topbar {
+      background: var(--bg-elevated);
+      border-bottom: 1px solid var(--border);
+      padding: 0 24px;
+      height: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+    }
+    
+    .logo {
+      font-size: 1rem;
+      font-weight: 600;
+      letter-spacing: -0.3px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    .logo-icon {
+      width: 28px; height: 28px; background: var(--accent);
+      border-radius: 6px; display: flex; align-items: center; justify-content: center;
+    }
+    
+    .logo-icon svg { width: 16px; height: 16px; }
+    
+    .topbar-actions {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    
+    .user-info {
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+    }
+    
+    .mobile-menu-btn {
+      display: none;
+      background: none; border: none; cursor: pointer;
+      padding: 8px; border-radius: var(--radius); color: var(--text-primary);
+    }
+    
+    .mobile-menu-btn:hover { background: var(--bg-subtle); }
+    
+    /* SIDEBAR */
+    .sidebar {
+      position: fixed;
+      top: 56px;
+      left: 0;
+      bottom: 0;
+      width: 220px;
+      background: var(--bg-elevated);
+      border-right: 1px solid var(--border);
+      padding: 16px 0;
+      overflow-y: auto;
+      z-index: 90;
+    }
+    
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 20px;
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+      transition: all 0.15s;
+      border-left: 2px solid transparent;
+    }
+    
+    .nav-item:hover {
+      background: var(--bg-subtle);
+      color: var(--text-primary);
+      text-decoration: none;
+    }
+    
+    .nav-item.active {
+      border-left-color: var(--accent);
+      color: var(--text-primary);
+      background: var(--accent-soft);
+    }
+    
+    .nav-divider {
+      height: 1px;
+      background: var(--border);
+      margin: 12px 16px;
+    }
+    
+    /* MAIN */
+    .main {
+      margin-left: 220px;
+      margin-top: 56px;
+      padding: 32px 40px;
+      max-width: 1000px;
+    }
+    
+    .page { display: none; }
+    .page.active { display: block; }
+    
+    .page-header {
+      margin-bottom: 32px;
+    }
+    
+    .page-header h1 {
+      font-size: 1.5rem;
+      font-weight: 600;
+      letter-spacing: -0.5px;
+      margin-bottom: 4px;
+    }
+    
+    .page-header p {
+      font-size: 0.9375rem;
+      color: var(--text-secondary);
+    }
+    
+    /* CARDS */
+    .card {
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      margin-bottom: 20px;
+    }
+    
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+    
+    .card-title {
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    
+    .card .value {
+      font-size: 1.75rem;
+      font-weight: 600;
+      letter-spacing: -0.5px;
+    }
+    
+    /* STATS GRID */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+    
+    /* TABLE */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    
+    th, td {
+      padding: 12px 16px;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.875rem;
+    }
+    
+    th {
+      color: var(--text-muted);
+      font-weight: 500;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    
+    td { color: var(--text-primary); }
+    
+    .key-mask {
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--text-secondary);
+      font-size: 0.8125rem;
+    }
+    
+    .badge {
+      padding: 4px 10px;
+      border-radius: 100px;
+      font-size: 0.75rem;
+      font-weight: 500;
+    }
+    
+    .badge-green { background: var(--green-soft); color: var(--green); }
+    .badge-red { background: var(--red-soft); color: var(--red); }
+    
+    /* BUTTONS */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 16px;
+      border-radius: var(--radius);
+      font-size: 0.875rem;
+      font-weight: 500;
+      font-family: inherit;
+      cursor: pointer;
+      border: none;
+      transition: all 0.15s;
+    }
+    
+    .btn-primary {
+      background: var(--accent);
+      color: white;
+    }
+    
+    .btn-primary:hover { opacity: 0.9; }
+    
+    .btn-outline {
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--text-primary);
+    }
+    
+    .btn-outline:hover {
+      background: var(--bg-subtle);
+    }
+    
+    .btn-danger {
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--text-secondary);
+    }
+    
+    .btn-danger:hover {
+      background: var(--red-soft);
+      border-color: var(--red);
+      color: var(--red);
+    }
+    
+    .btn-sm {
+      padding: 6px 12px;
+      font-size: 0.8125rem;
+    }
+    
+    /* FORM */
+    .form-row {
+      display: flex;
+      gap: 12px;
+      align-items: flex-end;
+    }
+    
+    .form-group {
+      flex: 1;
+    }
+    
+    .form-group label {
+      display: block;
+      font-size: 0.8125rem;
+      font-weight: 500;
+      color: var(--text-secondary);
+      margin-bottom: 6px;
+    }
+    
+    .form-group input,
+    .form-group select {
+      width: 100%;
+      padding: 9px 12px;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      background: var(--bg-elevated);
+      color: var(--text-primary);
+      font-size: 0.875rem;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    
+    .form-group input:focus,
+    .form-group select:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-soft);
+    }
+    
+    /* EMPTY STATE */
+    .empty-state {
+      text-align: center;
+      padding: 40px;
+      color: var(--text-muted);
+    }
+    
+    .empty-state p { margin-bottom: 16px; }
+    
+    /* CODE BLOCK */
+    .code-block {
+      background: var(--bg-subtle);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8125rem;
+      color: var(--text-primary);
+      margin-top: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    
+    .code-block code {
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    
+    @media (max-width: 768px) {
+      .mobile-menu-btn { display: flex; align-items: center; justify-content: center; }
+      .sidebar {
+        position: fixed;
+        top: 56px;
+        left: -220px;
+        width: 220px;
+        height: calc(100vh - 56px);
+        transition: left 0.2s ease;
+      }
+      .sidebar.open { left: 0; }
+      .main { margin-left: 0; padding: 24px 16px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <div style="display:flex;align-items:center;gap:12px;">
+      <button class="mobile-menu-btn" onclick="toggleSidebar()" aria-label="Toggle menu">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="3" y1="6" x2="21" y2="6"/>
+          <line x1="3" y1="12" x2="21" y2="12"/>
+          <line x1="3" y1="18" x2="21" y2="18"/>
+        </svg>
+      </button>
+      <a href="/" class="logo">
+        <div class="logo-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+            <path d="M9 12l2 2 4-4"/>
+            <circle cx="12" cy="12" r="10"/>
+          </svg>
+        </div>
+        TestPilot
+      </a>
+    </div>
+    <div class="topbar-actions">
+      <span class="user-info" id="user-name">Loading…</span>
+      <button class="btn btn-outline btn-sm" onclick="logout()">Sign Out</button>
+    </div>
+  </div>
+
+  <div class="sidebar" id="sidebar">
+    <a href="#" class="nav-item active" data-page="dashboard">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="3" y="3" width="7" height="7" rx="1"/>
+        <rect x="14" y="3" width="7" height="7" rx="1"/>
+        <rect x="3" y="14" width="7" height="7" rx="1"/>
+        <rect x="14" y="14" width="7" height="7" rx="1"/>
+      </svg>
+      Dashboard
+    </a>
+    <a href="#" class="nav-item" data-page="keys">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+        <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+      </svg>
+      API Keys
+    </a>
+    <div class="nav-divider"></div>
+    <a href="/" class="nav-item">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+        <polyline points="9 22 9 12 15 12 15 22"/>
+      </svg>
+      Back to Website
+    </a>
+  </div>
+
+  <div class="main">
+    <!-- DASHBOARD -->
+    <div id="page-dashboard" class="page active">
+      <div class="page-header">
+        <h1>Dashboard</h1>
+        <p>Welcome back. Here's your account overview.</p>
+      </div>
+      
+      <div class="stats-grid">
+        <div class="card">
+          <div class="card-title">API Key</div>
+          <div class="value" id="stat-key" style="font-size:1rem; margin-top:8px;">No key</div>
+        </div>
+        <div class="card">
+          <div class="card-title">Plan</div>
+          <div class="value" id="stat-plan">—</div>
+        </div>
+        <div class="card">
+          <div class="card-title">Account</div>
+          <div class="value" id="stat-email" style="font-size:1rem; margin-top:8px;">—</div>
+        </div>
+      </div>
+      
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Quick Start</span>
+        </div>
+        <p style="color:var(--text-secondary); font-size:0.9375rem; margin-bottom:12px;">Install the pytest plugin and start triaging:</p>
+        <div class="code-block">
+          <code id="install-cmd">pip install testpilot-ai-plugin[pytest]</code>
+          <button class="btn btn-outline btn-sm" onclick="copyCmd()">Copy</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- KEYS -->
+    <div id="page-keys" class="page">
+      <div class="page-header">
+        <h1>API Keys</h1>
+        <p>Manage your API keys for accessing the TestPilot AI service.</p>
+      </div>
+      
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Create New Key</span>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Key Name</label>
+            <input type="text" id="new-key-name" placeholder="e.g. ci-pipeline">
+          </div>
+          <div class="form-group" style="flex:0 0 120px;">
+            <label>Tier</label>
+            <select id="new-key-tier">
+              <option value="free">Free</option>
+              <option value="pro">Pro</option>
+              <option value="team">Team</option>
+            </select>
+          </div>
+          <button class="btn btn-primary" onclick="createKey()">Create</button>
+        </div>
+      </div>
+      
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Your Keys</span>
+        </div>
+        <table id="keys-table">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Prefix</th>
+              <th>Plan</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="keys-tbody"></tbody>
+        </table>
+        <div id="keys-empty" class="empty-state" style="display:none;">
+          <p>No API keys yet.</p>
+          <button class="btn btn-primary btn-sm" onclick="showPage('keys')">Create your first key</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API = '/api/v1';
+    let token = localStorage.getItem('tp_token');
+    let keys = [];
+
+    if (!token) { window.location.href = '/auth.html'; }
+
+    async function fetchAuth() {
+      try {
+        const r = await fetch(`${API}/auth/me`, { 
+          headers: { 'Authorization': `Bearer ${token}` } 
+        });
+        if (!r.ok) throw new Error('Unauthorized');
+        const data = await r.json();
+        document.getElementById('user-name').textContent = data.user?.full_name || data.email || 'User';
+        document.getElementById('stat-email').textContent = data.email || '—';
+        return data;
+      } catch(e) {
+        localStorage.removeItem('tp_token');
+        window.location.href = '/auth.html';
+      }
+    }
+
+    async function loadKeys() {
+      try {
+        const r = await fetch(`${API}/keys`, { 
+          headers: { 'Authorization': `Bearer ${token}` } 
+        });
+        if (r.ok) {
+          keys = await r.json();
+          renderKeys();
+          if (keys.length > 0) {
+            const active = keys.find(k => true);
+            if (active) {
+              document.getElementById('stat-key').textContent = active.prefix;
+              document.getElementById('stat-plan').textContent = active.tier;
+            }
+          }
+        }
+      } catch(e) {}
+    }
+
+    function renderKeys() {
+      const tbody = document.getElementById('keys-tbody');
+      const empty = document.getElementById('keys-empty');
+      if (!keys.length) { 
+        tbody.innerHTML = ''; 
+        empty.style.display = 'block'; 
+        return; 
+      }
+      empty.style.display = 'none';
+      tbody.innerHTML = keys.map(k => `
+        <tr>
+          <td>${k.name}</td>
+          <td><span class="key-mask">${k.prefix}</span></td>
+          <td><span class="badge badge-green">${k.tier}</span></td>
+          <td><span class="badge badge-green">Active</span></td>
+          <td>
+            <button class="btn btn-danger btn-sm" onclick="revokeKey(${k.id})">Revoke</button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    async function createKey() {
+      const name = document.getElementById('new-key-name').value.trim();
+      const tier = document.getElementById('new-key-tier').value;
+      if (!name) return alert('Enter a key name');
+      try {
+        const r = await fetch(`${API}/keys`, {
+          method: 'POST',
+          headers: { 
+            'Authorization': `Bearer ${token}`, 
+            'Content-Type': 'application/json' 
+          },
+          body: JSON.stringify({ name, tier })
+        });
+        const data = await r.json();
+        if (!r.ok) throw new Error(data.detail || 'Failed');
+        alert(`Your API key (save it — never shown again):\n\n${data.key}`);
+        localStorage.setItem('tp_api_key', data.key);
+        document.getElementById('install-cmd').textContent = `export TESTPILOT_API_KEY="${data.key}"`;
+        await loadKeys();
+        document.getElementById('new-key-name').value = '';
+      } catch(e) { alert(e.message); }
+    }
+
+    async function revokeKey(id) {
+      if (!confirm('Revoke this key?')) return;
+      try {
+        const r = await fetch(`${API}/auth/keys/${id}`, { 
+          method: 'DELETE', 
+          headers: { 'Authorization': `Bearer ${token}` } 
+        });
+        if (r.ok) await loadKeys();
+      } catch(e) {}
+    }
+
+    function showPage(name) {
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      document.getElementById('page-' + name).classList.add('active');
+      document.querySelectorAll('.nav-item[data-page]').forEach(n => {
+        n.classList.toggle('active', n.dataset.page === name);
+      });
+    }
+
+    function copyCmd() {
+      const cmd = document.getElementById('install-cmd').textContent;
+      navigator.clipboard.writeText(cmd);
+    }
+
+    function logout() {
+      localStorage.removeItem('tp_token');
+      localStorage.removeItem('tp_api_key');
+      window.location.href = '/auth.html';
+    }
+
+    function toggleSidebar() {
+      document.getElementById('sidebar').classList.toggle('open');
+    }
+
+    document.querySelectorAll('.nav-item[data-page]').forEach(el => {
+      el.addEventListener('click', e => { e.preventDefault(); showPage(el.dataset.page); });
+    });
+
+    fetchAuth().then(loadKeys);
+  </script>
+</body>
+</html>

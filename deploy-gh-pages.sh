@@ -23,6 +23,7 @@ git clone --branch gh-pages --single-branch \
 
 # Copy static assets to root (overwrite everything)
 rm -rf "$TMP_DIR"/*
+mkdir -p "$TMP_DIR/docs"
 cp -r "$WEB_DIR/landing/"* "$TMP_DIR/"
 cp -r "$WEB_DIR/ui/"* "$TMP_DIR/"
 cp -r "$WEB_DIR/docs/"* "$TMP_DIR/docs/"

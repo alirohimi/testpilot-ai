@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Docs — TestPilot AI</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght400;500;600;700&family=JetBrains+Mono:wght400;500&display=swap" rel="stylesheet">
   <style>
     :root {
       --bg: #0b0f1a; --surface: #111827; --surface2: #1a2236;
@@ -35,7 +35,7 @@
     }
     .nav-item {
       display: block; padding: 7px 12px; border-radius: 6px;
-      font-size: 0.88rem; color: var(--muted); transition: all 0.15s;
+      font-size: 0.88rem; color: var(--muted); transition: all 0.15s; cursor: pointer;
     }
     .nav-item:hover, .nav-item.active {
       background: var(--surface2); color: var(--text); text-decoration: none;
@@ -77,22 +77,41 @@
     @media (max-width: 768px) {
       .sidebar { display: none; }
       .main { margin-left: 0; padding: 32px 20px; }
+      .mobile-nav {
+        display: flex; gap: 8px; padding: 12px 20px;
+        border-bottom: 1px solid var(--border); background: var(--surface);
+        overflow-x: auto;
+      }
+      .mobile-nav a {
+        white-space: nowrap; padding: 6px 12px; border-radius: 6px;
+        font-size: 0.85rem; color: var(--muted);
+      }
+      .mobile-nav a.active { background: var(--surface2); color: var(--accent2); text-decoration: none; }
     }
+    @media (min-width: 769px) { .mobile-nav { display: none !important; } }
   </style>
 </head>
 <body>
+  <!-- Mobile nav -->
+  <div class="mobile-nav" id="mobile-nav">
+    <a href="#" data-page="quickstart" class="active">Quickstart</a>
+    <a href="#" data-page="plugin-config">Plugin Config</a>
+    <a href="#" data-page="api">API Reference</a>
+    <a href="#" data-page="triage-rules">Triage Rules</a>
+  </div>
+
   <aside class="sidebar">
     <div class="sidebar-logo">TestPilot <span>AI</span> Docs</div>
     <nav class="sidebar-nav">
       <div class="nav-group-label">Getting Started</div>
-      <a href="/testpilot-ai/docs/quickstart.html" class="nav-item active" data-page="quickstart">Quickstart</a>
-      <a href="/testpilot-ai/docs/plugin-config.html" class="nav-item" data-page="plugin-config">Plugin Config</a>
+      <a href="#" class="nav-item active" data-page="quickstart">Quickstart</a>
+      <a href="#" class="nav-item" data-page="plugin-config">Plugin Config</a>
       <div class="nav-group-label">Reference</div>
-      <a href="/testpilot-ai/docs/api.html" class="nav-item" data-page="api">API Reference</a>
-      <a href="/testpilot-ai/docs/triage-rules.html" class="nav-item" data-page="triage-rules">Triage Rules</a>
+      <a href="#" class="nav-item" data-page="api">API Reference</a>
+      <a href="#" class="nav-item" data-page="triage-rules">Triage Rules</a>
       <div class="nav-group-label">More</div>
       <a href="/testpilot-ai/" class="nav-item">Back to Website</a>
-      <a href="https://github.com" class="nav-item">GitHub</a>
+      <a href="https://github.com/alirohimi/testpilot-ai" class="nav-item">GitHub</a>
     </nav>
   </aside>
 
@@ -100,5 +119,205 @@
     <a href="/testpilot-ai/" class="back-link">← Back to TestPilot AI</a>
     <div id="doc-body"></div>
   </main>
+
+  <script>
+    const pages = {
+      'quickstart': `
+        <h1>Quickstart</h1>
+        <p class="subtitle">Get TestPilot AI triaging your test failures in under 5 minutes.</p>
+        <h2>1. Create an account</h2>
+        <p>Sign up at <a href="/testpilot-ai/auth.html">TestPilot AI</a> or via API.</p>
+        <h2>2. Get an API key</h2>
+        <p>After signing in, create a key from the <a href="/testpilot-ai/dashboard.html">dashboard</a> or via API.</p>
+        <p>Copy the <code>tp_...</code> key — it's shown <strong>only once</strong>.</p>
+        <h2>3. Install the pytest plugin</h2>
+        <pre><code>pip install testpilot-ai-plugin[pytest]</code></pre>
+        <h2>4. Configure</h2>
+        <pre><code>export TESTPILOT_API_KEY="tp_your_key_here"</code></pre>
+        <p>Or add to <code>pytest.ini</code> / <code>pyproject.toml</code>:</p>
+        <pre><code>[pytest]
+addopts = --triate --scrub</code></pre>
+        <h2>5. Run your tests</h2>
+        <pre><code>pytest --triate --scrub</code></pre>
+        <p>You'll see:</p>
+        <pre><code>✓ classified 12 failures | ✓ scrubbed 84 PII tokens
+→ Triaged to /triage/results.json</code></pre>
+        <h2>What's next?</h2>
+        <ul>
+          <li>Read the <a href="#" data-page="plugin-config">Plugin Configuration</a> guide</li>
+          <li>Explore the <a href="#" data-page="api">API Reference</a></li>
+          <li>Learn about <a href="#" data-page="triage-rules">Triage Rules</a></li>
+        </ul>
+      `,
+      'plugin-config': `
+        <h1>Plugin Configuration</h1>
+        <p class="subtitle">Configure the pytest plugin for your project.</p>
+        <h2>Command-line flags</h2>
+        <table>
+          <thead><tr><th>Flag</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><code>--triate</code></td><td>Enable AI triage for all failures</td></tr>
+            <tr><td><code>--scrub</code></td><td>Enable PII scrubbing of output</td></tr>
+            <tr><td><code>--api-key=KEY</code></td><td>TestPilot API key (or use <code>TESTPILOT_API_KEY</code> env)</td></tr>
+            <tr><td><code>--triage-dir=PATH</code></td><td>Output directory for triage results (default: <code>triage/</code>)</td></tr>
+            <tr><td><code>--no-llm</code></td><td>Use heuristic-only classification (no API calls)</td></tr>
+          </tbody>
+        </table>
+        <h2>pytest.ini / pyproject.toml</h2>
+        <pre><code>[pytest]
+addopts = --triate --scrub --triage-dir=reports/triage</code></pre>
+        <pre><code>[tool.pytest.ini_options]
+addopts = "--triate --scrub --triage-dir=reports/triage"</code></pre>
+        <h2>Environment variables</h2>
+        <table>
+          <thead><tr><th>Variable</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><code>TESTPILOT_API_KEY</code></td><td>Your <code>tp_...</code> API key</td></tr>
+            <tr><td><code>TESTPILOT_API_URL</code></td><td>API base URL (default: <code>https://api.testpilot.ai</code>)</td></tr>
+            <tr><td><code>TESTPILOT_NO_LLM</code></td><td>Set to <code>1</code> for heuristic-only mode</td></tr>
+          </tbody>
+        </table>
+        <h2>Offline / heuristic mode</h2>
+        <p>No API key? The plugin still works with local heuristics:</p>
+        <pre><code>pytest --triate --no-llm</code></pre>
+        <p>Classification runs entirely offline using the built-in rule engine (7 rules, regex + fuzzy matching). LLM suggestions are skipped.</p>
+        <h2>Scrubbing patterns</h2>
+        <p>Default patterns cover:</p>
+        <ul>
+          <li>Emails</li>
+          <li>Credit card numbers</li>
+          <li>API keys / tokens (<code>sk_...</code>, <code>tp_...</code>, <code>ghp_...</code>, AWS keys)</li>
+          <li>IPs, phone numbers</li>
+        </ul>
+        <p>Add custom patterns in <code>conftest.py</code>:</p>
+        <pre><code>pytest_plugins = ["testpilot_ai.plugin"]
+
+def pytest_testpilot_scrub_patterns(patterns):
+    patterns["internal_id"] = r"INT-\d{6}"</code></pre>
+      `,
+      'api': `
+        <h1>API Reference</h1>
+        <p class="subtitle">Complete REST API documentation for TestPilot AI.</p>
+        <div class="callout">
+          <strong>Base URL:</strong> <code>https://api.testpilot.ai</code> (or your self-hosted endpoint)
+        </div>
+        <p>All endpoints require either <code>Authorization: Bearer &lt;token&gt;</code> or <code>X-API-Key: &lt;key&gt;</code>.</p>
+        <h2>Auth</h2>
+        <h3>Register</h3>
+        <pre><code>POST /api/v1/auth/register
+Content-Type: application/json
+
+{
+  "email": "user@example.com",
+  "password": "strongpassword",
+  "full_name": "Jane Doe"
+}</code></pre>
+        <p>Response: <code>201 Created</code> — <code>{ "access_token", "token_type", "user": {...} }</code></p>
+        <h3>Login</h3>
+        <pre><code>POST /api/v1/auth/login
+Content-Type: application/json
+
+{ "email": "user@example.com", "password": "..." }</code></pre>
+        <h3>API Keys</h3>
+        <table>
+          <thead><tr><th>Method</th><th>Endpoint</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td>GET</td><td>/api/v1/auth/keys</td><td>List keys</td></tr>
+            <tr><td>POST</td><td>/api/v1/auth/keys</td><td>Create key</td></tr>
+            <tr><td>DELETE</td><td>/api/v1/auth/keys/{id}</td><td>Revoke key</td></tr>
+          </tbody>
+        </table>
+        <h2>Triage</h2>
+        <table>
+          <thead><tr><th>Method</th><th>Endpoint</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td>POST</td><td>/api/v1/triage/classify</td><td>Classify a single failure</td></tr>
+            <tr><td>POST</td><td>/api/v1/triage/run</td><td>Full triage pipeline</td></tr>
+            <tr><td>GET</td><td>/api/v1/triage/results</td><td>Get results</td></tr>
+          </tbody>
+        </table>
+        <h2>Scrub</h2>
+        <pre><code>POST /api/v1/scrub
+Body: { "text": "&lt;test output&gt;" }</code></pre>
+        <h2>Usage</h2>
+        <pre><code>GET /api/v1/usage/summary       — Credits used, plan info</code></pre>
+        <h2>Health</h2>
+        <pre><code>GET /api/v1/health</code></pre>
+        <p>Full interactive spec: <a href="#">/docs</a> (Swagger UI)</p>
+      `,
+      'triage-rules': `
+        <h1>Triage Rules</h1>
+        <p class="subtitle">Built-in classification rules and how to add custom patterns.</p>
+        <h2>Built-in Rules</h2>
+        <table>
+          <thead><tr><th>Rule</th><th>Pattern</th><th>Category</th></tr></thead>
+          <tbody>
+            <tr><td><code>assertion_error</code></td><td><code>AssertionError</code></td><td>Test Logic</td></tr>
+            <tr><td><code>import_error</code></td><td><code>ModuleNotFoundError</code></td><td>Environment</td></tr>
+            <tr><td><code>timeout_error</code></td><td><code>TimeoutError</code></td><td>Infrastructure</td></tr>
+            <tr><td><code>type_error</code></td><td><code>TypeError</code></td><td>Test Logic</td></tr>
+            <tr><td><code>key_error</code></td><td><code>KeyError</code></td><td>Test Logic</td></tr>
+            <tr><td><code>value_error</code></td><td><code>ValueError</code></td><td>Test Logic</td></tr>
+            <tr><td><code>connection_error</code></td><td><code>ConnectionError</code></td><td>Infrastructure</td></tr>
+          </tbody>
+        </table>
+        <h2>Severity Levels</h2>
+        <ul>
+          <li><strong>Critical</strong> — Test suite broken, blocking release</li>
+          <li><strong>High</strong> — Important feature failing</li>
+          <li><strong>Medium</strong> — Non-critical path failing</li>
+          <li><strong>Low</strong> — Edge case or cosmetic issue</li>
+        </ul>
+        <h2>Adding Custom Rules</h2>
+        <p>Create a <code>testpilot_rules.py</code> file in your project root:</p>
+        <pre><code># testpilot_rules.py
+from testpilot_ai.rules import Rule
+
+class CustomRules:
+    @Rule(pattern=r"DUPLICATE_KEY", category="data_integrity")
+    def duplicate_key_error(self, match):
+        return {
+            "severity": "high",
+            "suggestion": "Check for duplicate entries in test data fixtures.",
+            "owner": "backend-team"
+        }
+
+    @Rule(pattern=r"TEST_ENV_MISSING", category="environment")
+    def missing_env(self, match):
+        return {
+            "severity": "critical",
+            "suggestion": "Required test environment variable not set.",
+            "owner": "devops"
+        }</code></pre>
+        <p>Then register it in <code>conftest.py</code>:</p>
+        <pre><code>import testpilot_rules
+pytest_plugins = ["testpilot_ai.plugin"]</code></pre>
+        <div class="callout">
+          <strong>Tip:</strong> Use the <code>--no-llm</code> flag during development to test rules without consuming API credits.
+        </div>
+      `
+    };
+
+    function renderPage(name) {
+      const body = document.getElementById('doc-body');
+      body.innerHTML = pages[name] || '<p>Page not found.</p>';
+      document.querySelectorAll('.nav-item, .mobile-nav a').forEach(el => {
+        el.classList.toggle('active', el.dataset.page === name);
+      });
+      history.replaceState(null, '', '#' + name);
+      body.scrollTop = 0;
+    }
+
+    document.querySelectorAll('.nav-item[data-page], .mobile-nav a[data-page]').forEach(el => {
+      el.addEventListener('click', e => {
+        e.preventDefault();
+        renderPage(el.dataset.page);
+      });
+    });
+
+    // Load from hash or default
+    const hash = location.hash.replace('#', '');
+    renderPage(hash && pages[hash] ? hash : 'quickstart');
+  </script>
 </body>
 </html>

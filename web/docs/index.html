@@ -17,7 +17,6 @@
     a { color: var(--accent2); text-decoration: none; }
     a:hover { text-decoration: underline; }
 
-    /* Sidebar */
     .sidebar {
       width: 260px; flex-shrink: 0; background: var(--surface);
       border-right: 1px solid var(--border); padding: 24px 0;
@@ -29,7 +28,6 @@
       background: linear-gradient(135deg, var(--accent2), #a78bfa);
       -webkit-background-clip: text; -webkit-text-fill-color: transparent;
     }
-    .sidebar-logo span { font-weight: 500; opacity: 0.7; }
     .sidebar-nav { padding: 8px 12px; }
     .nav-group-label {
       font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1.5px;
@@ -44,7 +42,6 @@
     }
     .nav-item.active { color: var(--accent2); }
 
-    /* Main */
     .main { flex: 1; margin-left: 260px; padding: 48px 64px; max-width: 900px; }
     .main h1 { font-size: 2.2rem; font-weight: 800; margin-bottom: 8px; letter-spacing: -1px; }
     .main .subtitle { color: var(--muted); margin-bottom: 32px; }
@@ -74,7 +71,6 @@
       background: rgba(99,102,241,0.08); border-left: 3px solid var(--accent);
       padding: 14px 18px; border-radius: 0 8px 8px 0; margin: 20px 0;
     }
-    .callout p { margin: 0; color: var(--text); font-size: 0.95rem; }
     .back-link { display: inline-block; margin-bottom: 24px; color: var(--muted); font-size: 0.85rem; }
     .back-link:hover { color: var(--accent2); }
 
@@ -89,61 +85,20 @@
     <div class="sidebar-logo">TestPilot <span>AI</span> Docs</div>
     <nav class="sidebar-nav">
       <div class="nav-group-label">Getting Started</div>
-      <a href="/docs/quickstart" class="nav-item active" data-page="quickstart">Quickstart</a>
-      <a href="/docs/plugin-config" class="nav-item" data-page="plugin-config">Plugin Config</a>
+      <a href="/testpilot-ai/docs/quickstart.html" class="nav-item active" data-page="quickstart">Quickstart</a>
+      <a href="/testpilot-ai/docs/plugin-config.html" class="nav-item" data-page="plugin-config">Plugin Config</a>
       <div class="nav-group-label">Reference</div>
-      <a href="/docs/api" class="nav-item" data-page="api">API Reference</a>
-      <a href="/docs/triage-rules" class="nav-item" data-page="triage-rules">Triage Rules</a>
+      <a href="/testpilot-ai/docs/api.html" class="nav-item" data-page="api">API Reference</a>
+      <a href="/testpilot-ai/docs/triage-rules.html" class="nav-item" data-page="triage-rules">Triage Rules</a>
       <div class="nav-group-label">More</div>
-      <a href="/landing/" class="nav-item">Back to Website</a>
+      <a href="/testpilot-ai/" class="nav-item">Back to Website</a>
       <a href="https://github.com" class="nav-item">GitHub</a>
     </nav>
   </aside>
 
   <main class="main" id="content">
-    <a href="/landing/" class="back-link">← Back to TestPilot AI</a>
-    <div id="doc-body"><p style="color:var(--muted)">Loading documentation…</p></div>
+    <a href="/testpilot-ai/" class="back-link">← Back to TestPilot AI</a>
+    <div id="doc-body"></div>
   </main>
-
-  <script>
-    const pages = {
-      quickstart: await fetchDoc('quickstart'),
-      'plugin-config': await fetchDoc('plugin-config'),
-      api: await fetchDoc('api'),
-      'triage-rules': await fetchDoc('triage-rules'),
-    };
-    async function fetchDoc(name) {
-      try {
-        const r = await fetch('/docs/raw/' + name + '.md');
-        if (r.ok) return await r.text();
-      } catch(e) {}
-      return '# ' + name.replace(/-/g,' ') + '\n\nPage not found.';
-    }
-    // Simple Markdown-to-HTML (covers the docs we need)
-    function mdToHtml(md) {
-      return md
-        .replace(/^### (.+)$/gm, '<h3>$1</h3>')
-        .replace(/^## (.+)$/gm, '<h2>$1</h2>')
-        .replace(/^# (.+)$/gm, '<h1>$1</h1>')
-        .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-        .replace(/`([^`]+)`/g, '<code>$1</code>')
-        .replace(/^\|(.+)\|$/gm, (m) => {
-          const cells = m.split('|').filter(c => c.trim());
-          return '<tr>' + cells.map(c => `<td>${c.trim()}</td>`).join('') + '</tr>';
-        })
-        .replace(/(<tr>.*<\/tr>\n?)+/g, '<table>$&</table>')
-        .replace(/^- (.+)$/gm, '<li>$1</li>')
-        .replace(/((?:<li>.*<\/li>\n?)+)/g, '<ul>$1</ul>')
-        .replace(/^\$(.+)$/gm, '<pre><code>$1</code></pre>')
-        .replace(/(.{0,200}?)(\n\n|$)/g, (m, p) => p.trim() ? `<p>${p}</p>` : '')
-        .replace(/\n/g, '');
-    }
-    const slug = location.pathname.split('/').pop() || 'quickstart';
-    const raw = pages[slug] || pages['quickstart'];
-    document.getElementById('doc-body').innerHTML = mdToHtml(raw);
-    document.querySelectorAll('.nav-item[data-page]').forEach(el => {
-      el.classList.toggle('active', el.dataset.page === slug);
-    });
-  </script>
 </body>
 </html>

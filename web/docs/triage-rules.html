@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Triage Rules — TestPilot AI Docs</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root { --bg: #0b0f1a; --surface: #111827; --surface2: #1a2236; --border: #2a3450; --text: #e2e8f0; --muted: #94a3b8; --accent: #6366f1; --accent2: #818cf8; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); display: flex; min-height: 100vh; }
+    a { color: var(--accent2); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .sidebar { width: 260px; flex-shrink: 0; background: var(--surface); border-right: 1px solid var(--border); padding: 24px 0; position: fixed; top: 0; left: 0; bottom: 0; overflow-y: auto; }
+    .sidebar-logo { font-size: 1.1rem; font-weight: 800; padding: 0 20px 20px; border-bottom: 1px solid var(--border); margin-bottom: 16px; background: linear-gradient(135deg, var(--accent2), #a78bfa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .sidebar-nav { padding: 8px 12px; }
+    .nav-group-label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1.5px; color: var(--muted); padding: 12px 8px 6px; font-weight: 600; }
+    .nav-item { display: block; padding: 7px 12px; border-radius: 6px; font-size: 0.88rem; color: var(--muted); transition: all 0.15s; }
+    .nav-item:hover, .nav-item.active { background: var(--surface2); color: var(--text); text-decoration: none; }
+    .nav-item.active { color: var(--accent2); }
+    .main { flex: 1; margin-left: 260px; padding: 48px 64px; max-width: 900px; }
+    .main h1 { font-size: 2.2rem; font-weight: 800; margin-bottom: 8px; letter-spacing: -1px; }
+    .main .subtitle { color: var(--muted); margin-bottom: 32px; }
+    .main h2 { font-size: 1.4rem; font-weight: 700; margin: 40px 0 12px; color: var(--text); border-top: 1px solid var(--border); padding-top: 20px; }
+    .main h3 { font-size: 1.1rem; font-weight: 600; margin: 24px 0 8px; }
+    .main p { color: var(--muted); margin-bottom: 16px; line-height: 1.7; }
+    .main ul, .main ol { color: var(--muted); padding-left: 24px; margin-bottom: 16px; }
+    .main li { margin-bottom: 6px; }
+    .main code { font-family: 'JetBrains Mono', monospace; background: var(--surface2); padding: 2px 7px; border-radius: 4px; font-size: 0.88em; color: var(--accent2); }
+    .main pre { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 16px 20px; overflow-x: auto; margin: 16px 0; }
+    .main pre code { background: none; padding: 0; color: var(--text); }
+    .main table { width: 100%; border-collapse: collapse; margin: 16px 0; }
+    .main th, .main td { padding: 10px 14px; border: 1px solid var(--border); text-align: left; font-size: 0.9rem; }
+    .main th { background: var(--surface2); color: var(--text); font-weight: 600; }
+    .main td { color: var(--muted); }
+    .main td code { background: none; padding: 0; }
+    .callout { background: rgba(99,102,241,0.08); border-left: 3px solid var(--accent); padding: 14px 18px; border-radius: 0 8px 8px 0; margin: 20px 0; }
+    .back-link { display: inline-block; margin-bottom: 24px; color: var(--muted); font-size: 0.85rem; }
+    .back-link:hover { color: var(--accent2); }
+    @media (max-width: 768px) { .sidebar { display: none; } .main { margin-left: 0; padding: 32px 20px; } }
+  </style>
+</head>
+<body>
+  <aside class="sidebar">
+    <div class="sidebar-logo">TestPilot <span>AI</span> Docs</div>
+    <nav class="sidebar-nav">
+      <div class="nav-group-label">Getting Started</div>
+      <a href="/testpilot-ai/docs/quickstart.html" class="nav-item">Quickstart</a>
+      <a href="/testpilot-ai/docs/plugin-config.html" class="nav-item">Plugin Config</a>
+      <div class="nav-group-label">Reference</div>
+      <a href="/testpilot-ai/docs/api.html" class="nav-item">API Reference</a>
+      <a href="/testpilot-ai/docs/triage-rules.html" class="nav-item active">Triage Rules</a>
+      <div class="nav-group-label">More</div>
+      <a href="/testpilot-ai/" class="nav-item">Back to Website</a>
+      <a href="https://github.com" class="nav-item">GitHub</a>
+    </nav>
+  </aside>
+  <main class="main">
+    <a href="/testpilot-ai/" class="back-link">← Back to TestPilot AI</a>
+    <h1>Triage Rules</h1>
+    <p class="subtitle">Built-in heuristic classification rules for offline mode.</p>
+
+    <p>The built-in heuristic engine uses 7 classification rules when LLM is unavailable or disabled.</p>
+
+    <h2>Rules</h2>
+    <table>
+      <thead><tr><th>Rule</th><th>Pattern</th><th>Category</th></tr></thead>
+      <tbody>
+        <tr><td><code>connection-reset</code></td><td><code>Connection reset|Broken pipe|ECONNRESET</code></td><td>Infrastructure</td></tr>
+        <tr><td><code>timeout</code></td><td><code>Timeout|timed out|deadline exceeded</code></td><td>Environment</td></tr>
+        <tr><td><code>assertion-fail</code></td><td><code>AssertionError|assert |expected</code></td><td>Assertion</td></tr>
+        <tr><td><code>not-implemented</code></td><td><code>NotImplementedError|not implemented</code></td><td>Logic</td></tr>
+        <tr><td><code>import-error</code></td><td><code>ImportError|ModuleNotFoundError</code></td><td>Environment</td></tr>
+        <tr><td><code>type-error</code></td><td><code TypeError|type error</code></td><td>Logic</td></tr>
+        <tr><td><code>value-error</code></td><td><code>ValueError|value error</code></td><td>Assertion</td></tr>
+      </tbody>
+    </table>
+
+    <h2>LLM Classification</h2>
+    <p>With <code>--triate</code> (no <code>--no-llm</code>), the LLM analyzes the full traceback and suggests:</p>
+    <ul>
+      <li><strong>Category</strong> — Infrastructure / Environment / Assertion / Logic / Unknown</li>
+      <li><strong>Likely cause</strong> — Human-readable explanation</li>
+      <li><strong>Suggested fix</strong> — Actionable recommendation</li>
+      <li><strong>Confidence</strong> — 0.0–1.0</li>
+    </ul>
+
+    <h2>Custom Rules</h2>
+    <p>Add patterns in <code>conftest.py</code>:</p>
+    <pre><code>def pytest_testpilot_rules(rules):
+    rules.append({
+        "name": "kubernetes-crash",
+        "pattern": r"CrashLoopBackOff|ImagePullBackOff",
+        "category": "Infrastructure",
+        "suggestion": "Check pod logs with kubectl describe pod <pod>",
+    })</code></pre>
+  </main>
+</body>
+</html>

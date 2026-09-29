@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta http-equiv="Content-type" content="text/html; charset=utf-8">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; img-src data:; connect-src 'self'">
+    <title>Page not found</title>
+    <style>
+      body { background: #0b0f1a; color: #e2e8f0; font-family: system-ui; text-align: center; padding-top: 100px; }
+      h1 { font-size: 4rem; color: #6366f1; margin-bottom: 16px; }
+      p { color: #94a3b8; margin-bottom: 32px; }
+      a { color: #818cf8; text-decoration: none; }
+    </style>
+    <script>
+      var rel = window.location.pathname.replace(/^\/testpilot-ai\//, '');
+      if (rel !== 'index.html' && rel !== '') window.location.replace('/testpilot-ai/' + rel.replace('.html',''));
+    </script>
+  </head>
+  <body>
+    <h1>404</h1>
+    <p>Page not found. Redirecting...</p>
+    <a href="/testpilot-ai/">← Back to TestPilot AI</a>
+  </body>
+</html>

@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://testpilot:testpilot@db:5432/testpilot
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - SECRET_KEY=${SECRET_KEY:-changeme}
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      - db
+      - redis
+    restart: unless-stopped
+    networks:
+      - testpilot
+
+  db:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_USER=testpilot
+      - POSTGRES_PASSWORD=testpilot
+      - POSTGRES_DB=testpilot
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    networks:
+      - testpilot
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    networks:
+      - testpilot
+
+volumes:
+  postgres_data:
+
+networks:
+  testpilot:
+    driver: bridge

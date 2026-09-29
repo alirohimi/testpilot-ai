@@ -1,0 +1,34 @@
+# Render Deployment Configuration
+services:
+  # API Service
+  - type: web
+    name: testpilot-ai-api
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn api.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: testpilot-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: testpilot-redis
+          property: connectionString
+      - key: SECRET_KEY
+        generateValue: true
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+
+# PostgreSQL Database
+databases:
+  - name: testpilot-db
+    plan: starter
+
+# Redis Cache
+redisInstances:
+  - name: testpilot-redis
+    plan: starter

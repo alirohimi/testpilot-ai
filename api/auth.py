@@ -1,0 +1,165 @@
+"""JWT authentication for TestPilot AI."""
+
+import os
+from datetime import datetime, timedelta
+from typing import Optional
+
+from jose import JWTError, jwt
+from passlib.context import CryptContext
+from fastapi import Depends, HTTPException, status
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from sqlalchemy.orm import Session
+
+from .database import get_db_session
+from .models import User, APIKey
+
+# Security settings
+SECRET_KEY = os.getenv("SECRET_KEY", "dev-secret-key-change-in-production")
+ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7  # 1 week
+API_KEY_PREFIX = "tp_"
+
+# Password hashing
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+security = HTTPBearer()
+
+
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    """Verify a password against its hash."""
+    return pwd_context.verify(plain_password, hashed_password)
+
+
+def get_password_hash(password: str) -> str:
+    """Hash a password."""
+    return pwd_context.hash(password)
+
+
+def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
+    """Create a JWT access token."""
+    to_encode = data.copy()
+    if expires_delta:
+        expire = datetime.utcnow() + expires_delta
+    else:
+        expire = datetime.utcnow() + timedelta(minutes=15)
+    to_encode.update({"exp": expire})
+    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    return encoded_jwt
+
+
+def create_api_key(user_id: int, name: str, tier: str = "free") -> tuple[str, str]:
+    """
+    Create a new API key for a user.
+    
+    Returns:
+        (full_key, key_prefix) - full_key should be shown once and stored securely
+    """
+    import secrets
+    import hashlib
+    
+    # Generate random key
+    random_part = secrets.token_hex(24)
+    full_key = f"{API_KEY_PREFIX}{random_part}"
+    key_hash = hashlib.sha256(full_key.encode()).hexdigest()
+    prefix = f"{full_key[:8]}..."
+    
+    return full_key, key_hash, prefix
+
+
+def authenticate_user(db: Session, email: str, password: str) -> Optional[User]:
+    """Authenticate user with email and password."""
+    user = db.query(User).filter(User.email == email).first()
+    if not user:
+        return None
+    if not verify_password(password, user.hashed_password):
+        return None
+    return user
+
+
+def get_current_user(
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    db: Session = Depends(get_db_session)
+) -> User:
+    """Get current user from JWT token."""
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    
+    try:
+        payload = jwt.decode(credentials.credentials, SECRET_KEY, algorithms=[ALGORITHM])
+        user_id: int = payload.get("sub")
+        if user_id is None:
+            raise credentials_exception
+    except JWTError:
+        raise credentials_exception
+    
+    user = db.query(User).filter(User.id == user_id).first()
+    if user is None:
+        raise credentials_exception
+    if not user.is_active:
+        raise HTTPException(status_code=400, detail="Inactive user")
+    
+    return user
+
+
+async def get_api_key_user(
+    x_api_key: str = Depends(lambda x: x),
+    db: Session = Depends(get_db_session)
+) -> dict:
+    """
+    Get user from API key.
+    
+    Expects X-API-Key header with value like: tp_abc123...
+    """
+    if not x_api_key.startswith(API_KEY_PREFIX):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid API key format"
+        )
+    
+    import hashlib
+    key_hash = hashlib.sha256(x_api_key.encode()).hexdigest()
+    
+    # Find API key in database
+    api_key = db.query(APIKey).filter(APIKey.key_hash == key_hash).first()
+    if not api_key or not api_key.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or inactive API key"
+        )
+    
+    # Check tier limits
+    from .dependencies import get_tier_limit
+    limit = get_tier_limit(api_key.tier)
+    
+    # Check monthly usage
+    from .dependencies import get_monthly_usage
+    usage = get_monthly_usage(db, api_key.id)
+    if usage >= limit:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail=f"Monthly limit exceeded ({usage}/{limit}). Upgrade your plan."
+        )
+    
+    # Update last used
+    api_key.last_used_at = datetime.utcnow()
+    db.commit()
+    
+    return {
+        "user_id": api_key.user_id,
+        "key_id": api_key.id,
+        "tier": api_key.tier,
+        "name": api_key.name,
+        "limit": limit,
+        "usage": usage
+    }
+
+
+def require_tier(required_tier: str):
+    """Dependency to check if user has required tier."""
+    async def checker(current_user: User = Depends(get_current_user)):
+        # This would need access to subscription info
+        # Simplified for now
+        return current_user
+    return checker

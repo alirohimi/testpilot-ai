@@ -299,7 +299,16 @@
     }
     
     .integration-chip:hover { border-color: var(--border-strong); }
-    
+
+    /* DOCS CARDS */
+    .doc-card:hover {
+      border-color: var(--accent) !important;
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(99, 102, 241, 0.12);
+    }
+    .doc-card h3 { color: var(--text-primary); }
+    .doc-card svg { flex-shrink: 0; }
+
     /* CTA */
     .cta-section {
       text-align: center; padding: 80px 24px;
@@ -388,7 +397,7 @@
         <a href="#features">Features</a>
         <a href="#how-it-works">How it Works</a>
         <a href="#pricing">Pricing</a>
-        <a href="/testpilot-ai/docs/">Docs</a>
+        <a href="#docs">Docs</a>
         <a href="/testpilot-ai/auth.html" class="btn btn-primary">Sign In</a>
       </div>
     </div>
@@ -540,6 +549,44 @@
       <div class="integration-chip">GitHub Actions</div>
       <div class="integration-chip">GitLab CI</div>
       <div class="integration-chip">Docker</div>
+    </div>
+  </section>
+
+  <section class="section" id="docs" style="background: var(--bg-elevated); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); margin: 0; max-width: 100%; padding: 80px 24px;">
+    <div style="max-width: 1120px; margin: 0 auto;">
+      <div class="section-label">Documentation</div>
+      <h2 class="section-title">Everything you need to get started</h2>
+      <p class="section-desc" style="max-width: 600px; margin-bottom: 40px;">Comprehensive guides, API reference, and configuration options.</p>
+      <div class="docs-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px;">
+        <a href="/testpilot-ai/docs/quickstart.html" class="doc-card" style="background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 24px; text-decoration: none; color: inherit; transition: all 0.15s; display: block;">
+          <div style="width: 40px; height: 40px; background: rgba(99,102,241,0.1); border-radius: 8px; display: flex; align-items: center; justify-content: center; margin-bottom: 16px;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+          </div>
+          <h3 style="font-size: 1rem; font-weight: 600; margin-bottom: 8px;">Quickstart</h3>
+          <p style="font-size: 0.875rem; color: var(--text-secondary); margin: 0;">Get up and running in 5 minutes with our step-by-step guide.</p>
+        </a>
+        <a href="/testpilot-ai/docs/plugin-config.html" class="doc-card" style="background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 24px; text-decoration: none; color: inherit; transition: all 0.15s; display: block;">
+          <div style="width: 40px; height: 40px; background: rgba(99,102,241,0.1); border-radius: 8px; display: flex; align-items: center; justify-content: center; margin-bottom: 16px;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          </div>
+          <h3 style="font-size: 1rem; font-weight: 600; margin-bottom: 8px;">Plugin Config</h3>
+          <p style="font-size: 0.875rem; color: var(--text-secondary); margin: 0;">Configure pytest flags, env vars, and custom scrubbing patterns.</p>
+        </a>
+        <a href="/testpilot-ai/docs/api.html" class="doc-card" style="background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 24px; text-decoration: none; color: inherit; transition: all 0.15s; display: block;">
+          <div style="width: 40px; height: 40px; background: rgba(99,102,241,0.1); border-radius: 8px; display: flex; align-items: center; justify-content: center; margin-bottom: 16px;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="2"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
+          </div>
+          <h3 style="font-size: 1rem; font-weight: 600; margin-bottom: 8px;">API Reference</h3>
+          <p style="font-size: 0.875rem; color: var(--text-secondary); margin: 0;">Complete REST API docs for auth, triage, scrub, and usage endpoints.</p>
+        </a>
+        <a href="/testpilot-ai/docs/triage-rules.html" class="doc-card" style="background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 24px; text-decoration: none; color: inherit; transition: all 0.15s; display: block;">
+          <div style="width: 40px; height: 40px; background: rgba(99,102,241,0.1); border-radius: 8px; display: flex; align-items: center; justify-content: center; margin-bottom: 16px;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          </div>
+          <h3 style="font-size: 1rem; font-weight: 600; margin-bottom: 8px;">Triage Rules</h3>
+          <p style="font-size: 0.875rem; color: var(--text-secondary); margin: 0;">Learn about built-in classification rules and how to add custom patterns.</p>
+        </a>
+      </div>
     </div>
   </section>
 

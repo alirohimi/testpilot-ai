@@ -38,7 +38,7 @@ class TestScrubber:
         data = {
             "email": "user@example.com",
             "nested": {
-                "password": "secret123"
+                "password": "password: secret123"
             }
         }
         result = scrubber.scrub_dict(data)

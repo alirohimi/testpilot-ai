@@ -79,6 +79,14 @@
       color: var(--text-secondary);
     }
     
+    .mobile-menu-btn {
+      display: none;
+      background: none; border: none; cursor: pointer;
+      padding: 8px; border-radius: var(--radius); color: var(--text-primary);
+    }
+    
+    .mobile-menu-btn:hover { background: var(--bg-subtle); }
+    
     /* SIDEBAR */
     .sidebar {
       position: fixed;
@@ -90,6 +98,7 @@
       border-right: 1px solid var(--border);
       padding: 16px 0;
       overflow-y: auto;
+      z-index: 90;
     }
     
     .nav-item {
@@ -346,21 +355,39 @@
     }
     
     @media (max-width: 768px) {
-      .sidebar { display: none; }
+      .mobile-menu-btn { display: flex; align-items: center; justify-content: center; }
+      .sidebar {
+        position: fixed;
+        top: 56px;
+        left: -220px;
+        width: 220px;
+        height: calc(100vh - 56px);
+        transition: left 0.2s ease;
+      }
+      .sidebar.open { left: 0; }
       .main { margin-left: 0; padding: 24px 16px; }
     }
   </style>
 </head>
 <body>
   <div class="topbar">
-    <div class="logo">
-      <div class="logo-icon">
-        <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
-          <path d="M9 12l2 2 4-4"/>
-          <circle cx="12" cy="12" r="10"/>
+    <div style="display:flex;align-items:center;gap:12px;">
+      <button class="mobile-menu-btn" onclick="toggleSidebar()" aria-label="Toggle menu">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="3" y1="6" x2="21" y2="6"/>
+          <line x1="3" y1="12" x2="21" y2="12"/>
+          <line x1="3" y1="18" x2="21" y2="18"/>
         </svg>
-      </div>
-      TestPilot
+      </button>
+      <a href="/" class="logo">
+        <div class="logo-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+            <path d="M9 12l2 2 4-4"/>
+            <circle cx="12" cy="12" r="10"/>
+          </svg>
+        </div>
+        TestPilot
+      </a>
     </div>
     <div class="topbar-actions">
       <span class="user-info" id="user-name">Loading…</span>
@@ -368,7 +395,7 @@
     </div>
   </div>
 
-  <div class="sidebar">
+  <div class="sidebar" id="sidebar">
     <a href="#" class="nav-item active" data-page="dashboard">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <rect x="3" y="3" width="7" height="7" rx="1"/>
@@ -386,7 +413,7 @@
       API Keys
     </a>
     <div class="nav-divider"></div>
-    <a href="/landing/" class="nav-item">
+    <a href="/" class="nav-item">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
         <polyline points="9 22 9 12 15 12 15 22"/>
@@ -487,7 +514,7 @@
     let token = localStorage.getItem('tp_token');
     let keys = [];
 
-    if (!token) { window.location.href = '/ui/auth'; }
+    if (!token) { window.location.href = '/auth.html'; }
 
     async function fetchAuth() {
       try {
@@ -501,7 +528,7 @@
         return data;
       } catch(e) {
         localStorage.removeItem('tp_token');
-        window.location.href = '/ui/auth';
+        window.location.href = '/auth.html';
       }
     }
 
@@ -596,7 +623,11 @@
     function logout() {
       localStorage.removeItem('tp_token');
       localStorage.removeItem('tp_api_key');
-      window.location.href = '/ui/auth';
+      window.location.href = '/auth.html';
+    }
+
+    function toggleSidebar() {
+      document.getElementById('sidebar').classList.toggle('open');
     }
 
     document.querySelectorAll('.nav-item[data-page]').forEach(el => {

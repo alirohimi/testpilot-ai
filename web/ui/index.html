@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TestPilot AI — Intelligent Test Failure Analysis</title>
+  <meta name="description" content="AI-powered test failure triage and scrubbing. Classify, triage, and clean test output automatically.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #fafafa;
+      --bg-elevated: #ffffff;
+      --bg-subtle: #f5f5f5;
+      --bg-hover: #efefef;
+      --text-primary: #111111;
+      --text-secondary: #666666;
+      --text-muted: #999999;
+      --border: #e5e5e5;
+      --border-strong: #d4d4d4;
+      --accent: #111111;
+      --accent-soft: rgba(17, 17, 17, 0.08);
+      --green: #16a34a;
+      --green-soft: rgba(22, 163, 74, 0.1);
+      --red: #dc2626;
+      --red-soft: rgba(220, 38, 38, 0.1);
+      --blue: #2563eb;
+      --blue-soft: rgba(37, 99, 235, 0.1);
+      --radius: 8px;
+      --radius-lg: 12px;
+    }
+    
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg);
+      color: var(--text-primary);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+    
+    a { color: inherit; text-decoration: none; }
+    
+    /* NAV */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      background: rgba(250, 250, 250, 0.95);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+    }
+    
+    .nav-inner {
+      max-width: 1120px; margin: 0 auto;
+      display: flex; align-items: center; justify-content: space-between;
+      height: 56px; padding: 0 24px;
+    }
+    
+    .logo {
+      font-size: 1rem; font-weight: 600; letter-spacing: -0.3px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    
+    .logo-icon {
+      width: 28px; height: 28px; background: var(--accent);
+      border-radius: 6px; display: flex; align-items: center; justify-content: center;
+    }
+    
+    .logo-icon svg { width: 16px; height: 16px; }
+    
+    .nav-links { display: flex; gap: 32px; align-items: center; }
+    
+    .nav-links a {
+      font-size: 0.875rem; color: var(--text-secondary);
+      transition: color 0.15s;
+    }
+    
+    .nav-links a:hover { color: var(--text-primary); }
+    
+    .mobile-menu-btn {
+      display: none;
+      background: none; border: none; cursor: pointer;
+      padding: 8px; border-radius: var(--radius); color: var(--text-primary);
+    }
+    
+    .mobile-menu-btn:hover { background: var(--bg-subtle); }
+    
+    .btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 8px 16px; border-radius: var(--radius);
+      font-size: 0.875rem; font-weight: 500; cursor: pointer;
+      border: none; transition: all 0.15s;
+    }
+    
+    .btn-primary {
+      background: var(--accent); color: white;
+    }
+    
+    .btn-primary:hover { opacity: 0.9; }
+    
+    .btn-secondary {
+      background: var(--bg-elevated); color: var(--text-primary);
+      border: 1px solid var(--border);
+    }
+    
+    .btn-secondary:hover { background: var(--bg-hover); }
+    
+    /* HERO */
+    .hero {
+      padding: 120px 24px 100px;
+      text-align: center;
+      max-width: 800px; margin: 0 auto;
+    }
+    
+    .badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: var(--bg-elevated); border: 1px solid var(--border);
+      padding: 4px 12px; border-radius: 100px;
+      font-size: 0.8125rem; color: var(--text-secondary); margin-bottom: 32px;
+    }
+    
+    .badge .dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--green);
+    }
+    
+    .hero h1 {
+      font-size: clamp(2.25rem, 5vw, 3.5rem);
+      font-weight: 600; line-height: 1.15;
+      letter-spacing: -1.5px; margin-bottom: 24px;
+    }
+    
+    .hero p {
+      font-size: 1.125rem; color: var(--text-secondary);
+      max-width: 560px; margin: 0 auto 40px; line-height: 1.6;
+    }
+    
+    .hero-actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+    
+    .btn-large {
+      padding: 10px 20px; font-size: 0.9375rem;
+    }
+    
+    /* CODE BLOCK */
+    .code-showcase {
+      max-width: 640px; margin: 64px auto 0;
+      background: var(--bg-elevated); border: 1px solid var(--border);
+      border-radius: var(--radius-lg); overflow: hidden;
+      text-align: left;
+    }
+    
+    .code-header {
+      display: flex; align-items: center; gap: 8px;
+      padding: 12px 16px; background: var(--bg-subtle);
+      border-bottom: 1px solid var(--border);
+    }
+    
+    .code-dot { width: 10px; height: 10px; border-radius: 50%; }
+    .code-dot.r { background: #ff5f57; }
+    .code-dot.y { background: #febc2e; }
+    .code-dot.g { background: #28c840; }
+    
+    .code-body {
+      padding: 20px; font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8125rem; line-height: 1.8;
+      color: var(--text-secondary);
+    }
+    
+    .code-body .comment { color: var(--text-muted); }
+    .code-body .cmd { color: var(--text-primary); }
+    .code-body .flag { color: var(--blue); }
+    .code-body .output { color: var(--green); }
+    
+    /* SECTIONS */
+    .section {
+      padding: 80px 24px;
+      max-width: 1120px; margin: 0 auto;
+    }
+    
+    .section-label {
+      font-size: 0.75rem; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 1px;
+      color: var(--text-muted); margin-bottom: 12px;
+    }
+    
+    .section-title {
+      font-size: clamp(1.75rem, 3vw, 2.25rem);
+      font-weight: 600; letter-spacing: -0.75px;
+      margin-bottom: 12px; line-height: 1.2;
+    }
+    
+    .section-desc {
+      font-size: 1rem; color: var(--text-secondary);
+      max-width: 560px; margin-bottom: 48px;
+    }
+    
+    /* FEATURES GRID */
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 1px;
+      background: var(--border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+    }
+    
+    .feature-card {
+      background: var(--bg-elevated); padding: 32px;
+      transition: background 0.15s;
+    }
+    
+    .feature-card:hover { background: var(--bg-subtle); }
+    
+    .feature-icon {
+      width: 40px; height: 40px; border-radius: var(--radius);
+      background: var(--accent-soft);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.125rem; margin-bottom: 20px;
+    }
+    
+    .feature-card h3 {
+      font-size: 1rem; font-weight: 600; margin-bottom: 8px;
+      letter-spacing: -0.25px;
+    }
+    
+    .feature-card p { color: var(--text-secondary); font-size: 0.9375rem; line-height: 1.6; }
+    
+    /* STEPS */
+    .steps-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: 32px;
+    }
+    
+    .step { position: relative; }
+    
+    .step-num {
+      font-size: 0.875rem; font-weight: 600; color: var(--text-muted);
+      margin-bottom: 12px; letter-spacing: 0.5px;
+    }
+    
+    .step h3 { font-size: 1.125rem; font-weight: 600; margin-bottom: 8px; letter-spacing: -0.25px; }
+    .step p { color: var(--text-secondary); font-size: 0.9375rem; }
+    
+    /* PRICING */
+    .pricing-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 16px;
+    }
+    
+    .pricing-card {
+      background: var(--bg-elevated); border: 1px solid var(--border);
+      border-radius: var(--radius-lg); padding: 32px;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    
+    .pricing-card:hover {
+      border-color: var(--border-strong);
+      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+    }
+    
+    .pricing-card.featured {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 1px var(--accent);
+    }
+    
+    .pricing-card h3 { font-size: 1rem; font-weight: 600; margin-bottom: 4px; }
+    
+    .pricing-card .price {
+      font-size: 2.5rem; font-weight: 600; letter-spacing: -1px;
+      margin-bottom: 4px; display: flex; align-items: baseline;
+    }
+    
+    .pricing-card .price span { font-size: 1rem; color: var(--text-muted); font-weight: 400; margin-left: 4px; }
+    
+    .pricing-card .price-desc { color: var(--text-secondary); font-size: 0.875rem; margin-bottom: 24px; }
+    
+    .pricing-card ul { list-style: none; margin-bottom: 24px; }
+    
+    .pricing-card li {
+      padding: 6px 0; font-size: 0.875rem; color: var(--text-secondary);
+      display: flex; align-items: center; gap: 10px;
+    }
+    
+    .pricing-card li::before { content: '✓'; color: var(--green); font-size: 0.75rem; font-weight: 600; }
+    
+    .pricing-card .btn { width: 100%; justify-content: center; }
+    
+    /* INTEGRATIONS */
+    .integrations-row {
+      display: flex; flex-wrap: wrap; gap: 8px; justify-content: center;
+    }
+    
+    .integration-chip {
+      background: var(--bg-elevated); border: 1px solid var(--border);
+      padding: 8px 16px; border-radius: 100px;
+      font-size: 0.875rem; color: var(--text-secondary);
+      transition: border-color 0.15s;
+    }
+    
+    .integration-chip:hover { border-color: var(--border-strong); }
+
+    /* DOCS CARDS */
+    .doc-card:hover {
+      border-color: var(--accent) !important;
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(99, 102, 241, 0.12);
+    }
+    .doc-card h3 { color: var(--text-primary); }
+    .doc-card svg { flex-shrink: 0; }
+
+    /* CTA */
+    .cta-section {
+      text-align: center; padding: 80px 24px;
+      background: var(--bg-subtle);
+      border-top: 1px solid var(--border);
+    }
+    
+    .cta-section h2 {
+      font-size: clamp(1.75rem, 3vw, 2.25rem);
+      font-weight: 600; letter-spacing: -0.75px; margin-bottom: 12px;
+    }
+    
+    .cta-section p { color: var(--text-secondary); font-size: 1rem; margin-bottom: 32px; }
+    
+    /* FOOTER */
+    footer {
+      padding: 60px 24px 40px; max-width: 1120px; margin: 0 auto;
+      border-top: 1px solid var(--border);
+    }
+    
+    .footer-inner {
+      display: flex; justify-content: space-between; flex-wrap: wrap; gap: 48px;
+    }
+    
+    .footer-brand .logo { margin-bottom: 12px; }
+    .footer-brand p { color: var(--text-secondary); font-size: 0.875rem; max-width: 280px; }
+    
+    .footer-links { display: flex; gap: 48px; }
+    
+    .footer-links h4 {
+      font-size: 0.75rem; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin-bottom: 16px;
+    }
+    
+    .footer-links a { display: block; color: var(--text-secondary); font-size: 0.875rem; padding: 4px 0; transition: color 0.15s; }
+    .footer-links a:hover { color: var(--text-primary); }
+    
+    .footer-bottom {
+      margin-top: 48px; padding-top: 24px;
+      border-top: 1px solid var(--border);
+      color: var(--text-muted); font-size: 0.8125rem; text-align: center;
+    }
+    
+    @media (max-width: 768px) {
+      .mobile-menu-btn { display: flex; align-items: center; justify-content: center; }
+      .nav-links {
+        position: fixed; top: 56px; left: 0; right: 0; bottom: 0;
+        flex-direction: column; gap: 0; background: var(--bg);
+        border-bottom: 1px solid var(--border);
+        padding: 16px 0; overflow-y: auto;
+        display: none;
+      }
+      .nav-links.open { display: flex; }
+      .nav-links a {
+        width: 100%; padding: 14px 24px; font-size: 1rem;
+        border-bottom: 1px solid var(--border);
+      }
+      .nav-links .btn { width: calc(100% - 48px); margin: 12px 24px; justify-content: center; }
+      .hero { padding: 120px 20px 60px; }
+      .steps-grid { grid-template-columns: 1fr; gap: 40px; }
+      .footer-inner { flex-direction: column; }
+      .footer-links { flex-direction: column; gap: 24px; }
+    }
+  </style>
+</head>
+<body>
+  <nav>
+    <div class="nav-inner">
+      <a href="/testpilot-ai/" class="logo">
+        <div class="logo-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+            <path d="M9 12l2 2 4-4"/>
+            <circle cx="12" cy="12" r="10"/>
+          </svg>
+        </div>
+        TestPilot
+      </a>
+      <button class="mobile-menu-btn" onclick="toggleMobileMenu()" aria-label="Toggle menu">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="3" y1="6" x2="21" y2="6"/>
+          <line x1="3" y1="12" x2="21" y2="12"/>
+          <line x1="3" y1="18" x2="21" y2="18"/>
+        </svg>
+      </button>
+      <div class="nav-links" id="nav-links">
+        <a href="#features">Features</a>
+        <a href="#how-it-works">How it Works</a>
+        <a href="#pricing">Pricing</a>
+        <a href="#docs">Docs</a>
+        <a href="/testpilot-ai/auth.html" class="btn btn-primary">Sign In</a>
+      </div>
+    </div>
+  </nav>
+
+  <section class="hero">
+    <div class="badge"><span class="dot"></span> Free plan. No credit card. 2-minute setup.</div>
+    <h1>Your test suite failed.<br>You don't have 3 hours to find out why.</h1>
+    <p>TestPilot AI tells you the root cause of every failure in seconds — before your coffee gets cold. Classify, triage, and scrub automatically. Ship fixes, not guesses.</p>
+    <div class="hero-actions">
+      <a href="/testpilot-ai/auth.html" class="btn btn-primary btn-large">Start Free — 100 Triages On Us</a>
+      <a href="#how-it-works" class="btn btn-secondary btn-large">See It Work (30 sec)</a>
+    </div>
+    <div class="code-showcase">
+      <div class="code-header">
+        <span class="code-dot r"></span><span class="code-dot y"></span><span class="code-dot g"></span>
+      </div>
+      <div class="code-body">
+        <span class="comment"># Install the pytest plugin</span><br>
+        <span class="cmd">pip install</span> <span class="flag">testpilot-ai-plugin[pytest]</span><br><br>
+        <span class="comment"># Run tests with auto-triage</span><br>
+        <span class="cmd">pytest</span> <span class="flag">--triage</span><br><br>
+        <span class="output">✓ classified 12 failures | ✓ scrubbed 84 PII tokens</span><br>
+        <span class="output">→ Triaged to /triage/results.json</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="features">
+    <div class="section-label">Why engineers love this</div>
+    <h2 class="section-title">Here's what most people miss about test failures.<br>The ones that win aren't the flaky ones.</h2>
+    <p class="section-desc">TestPilot AI doesn't just tell you what broke. It tells you why — and how to fix it. Before your next meeting.</p>
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon">🔍</div>
+        <h3>Instant Root Cause Analysis</h3>
+        <p>Stop guessing. Our AI reads your stack trace like a senior engineer — and tells you exactly what's wrong in plain English. "Flaky auth token," not "AssertionError at line 42."</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🚦</div>
+        <h3>Triage by Business Impact</h3>
+        <p>Not all failures are equal. TestPilot AI prioritizes what matters — payment flows over cosmetic bugs. Get the high-signal fixes first.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🧹</div>
+        <h3>PII Scrubbing (Save Your Job)</h3>
+        <p>Emails, API keys, credit cards — gone before they hit Slack or Allure. One mistake here and it's not just a bug, it's a lawsuit.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🔗</div>
+        <h3>Slack & Allure (Done For You)</h3>
+        <p>Failures ship to your team automatically — categorized, scrubbed, and ready to action. No manual report writing.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🧬</div>
+        <h3>Mutation Testing</h3>
+        <p>Your tests might be lying to you. We find the gaps — cases where your suite says "all good" but your code is broken.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">📊</div>
+        <h3>Pattern Library (Stop Repeating Mistakes)</h3>
+        <p>"We've seen this before" — and you'll know where. Every failure trains the system. Next time, it's faster.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="how-it-works" style="background: var(--bg-elevated); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); margin: 0; max-width: 100%; padding: 80px 24px;">
+    <div style="max-width: 1120px; margin: 0 auto;">
+      <div class="section-label">How It Works</div>
+      <h2 class="section-title">Three commands. Zero friction.</h2>
+      <div class="steps-grid">
+        <div class="step">
+          <div class="step-num">01</div>
+          <h3>pip install testpilot-ai-plugin[pytest]</h3>
+          <p>One command. That's the entire setup. No config files. No environment variables (unless you want them).</p>
+        </div>
+        <div class="step">
+          <div class="step-num">02</div>
+          <h3>pytest --triate --scrub</h3>
+          <p>Every failure gets classified by AI, triaged by business impact, and scrubbed of PII. Automatically. While you're still watching.</p>
+        </div>
+        <div class="step">
+          <div class="step-num">03</div>
+          <h3>Fix what matters. Ship faster.</h3>
+          <p>Results land in triage/results.json. Allure shows color-coded categories. Slack gets the summary your team actually needs. Done.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="pricing">
+    <div class="section-label">Pricing</div>
+    <h2 class="section-title">Free for individuals. Pay only when it pays for itself.</h2>
+    <p class="section-desc">Here's the thing: the free plan won't run out on you unless you're running thousands of tests per day. And the Team plan? Less than the cost of one manual debugging session.</p>
+    <div class="pricing-grid">
+      <div class="pricing-card">
+        <h3>Free</h3>
+        <div class="price">$0<span>/mo</span></div>
+        <div class="price-desc">For individual developers</div>
+        <ul>
+          <li>Up to 100 triages/month</li>
+          <li>Basic classification</li>
+          <li>PII scrubbing</li>
+          <li>Local results storage</li>
+          <li>Pytest plugin</li>
+        </ul>
+        <a href="/testpilot-ai/auth.html" class="btn btn-secondary">Start Free</a>
+      </div>
+      <div class="pricing-card featured">
+        <h3>Team</h3>
+        <div class="price">$29<span>/seat/mo</span></div>
+        <div class="price-desc">Less than one coffee per week. 100x ROI guaranteed.</div>
+        <ul>
+          <li><strong>Unlimited triages</strong> — no caps, no throttling</li>
+          <li>AI-powered triage suggestions (the good stuff)</li>
+          <li>Allure + Slack integration (your team loves this)</li>
+          <li>Shared pattern library (learn from everyone's mistakes)</li>
+          <li>Team dashboards (see what's breaking across repos)</li>
+          <li>Priority support — we answer, we don't ticket</li>
+        </ul>
+        <a href="/testpilot-ai/auth.html" class="btn btn-primary">Start Free Trial — 14 Days</a>
+      </div>
+      <div class="pricing-card">
+        <h3>Enterprise</h3>
+        <div class="price">Custom</div>
+        <div class="price-desc">For orgs that need control + compliance</div>
+        <ul>
+          <li>Everything in Team</li>
+          <li>SSO / SAML (your IT team approves this)</li>
+          <li>On-premise deployment (data stays yours)</li>
+          <li>Custom pattern rules (your patterns, not ours)</li>
+          <li>Dedicated support (named engineer, not a queue)</li>
+          <li>SLA guarantees (99.9% uptime or you eat lunch on us)</li>
+        </ul>
+        <a href="/testpilot-ai/auth.html" class="btn btn-secondary">Talk to Us</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-label">Integrations</div>
+    <h2 class="section-title">Works with your toolchain</h2>
+    <div class="integrations-row">
+      <div class="integration-chip">Python</div>
+      <div class="integration-chip">pytest</div>
+      <div class="integration-chip">Allure</div>
+      <div class="integration-chip">Slack</div>
+      <div class="integration-chip">Jenkins</div>
+      <div class="integration-chip">GitHub Actions</div>
+      <div class="integration-chip">GitLab CI</div>
+      <div class="integration-chip">Docker</div>
+    </div>
+  </section>
+
+  <section class="section" id="docs" style="background: var(--bg-elevated); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); margin: 0; max-width: 100%; padding: 80px 24px;">
+    <div style="max-width: 1120px; margin: 0 auto;">
+      <div class="section-label">Documentation</div>
+      <h2 class="section-title">Everything you need to get started</h2>
+      <p class="section-desc" style="max-width: 600px; margin-bottom: 40px;">Comprehensive guides, API reference, and configuration options.</p>
+      <div class="docs-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px;">
+        <a href="/testpilot-ai/docs/quickstart.html" class="doc-card" style="background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 24px; text-decoration: none; color: inherit; transition: all 0.15s; display: block;">
+          <div style="width: 40px; height: 40px; background: rgba(99,102,241,0.1); border-radius: 8px; display: flex; align-items: center; justify-content: center; margin-bottom: 16px;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+          </div>
+          <h3 style="font-size: 1rem; font-weight: 600; margin-bottom: 8px;">Quickstart</h3>
+          <p style="font-size: 0.875rem; color: var(--text-secondary); margin: 0;">Get up and running in 5 minutes with our step-by-step guide.</p>
+        </a>
+        <a href="/testpilot-ai/docs/plugin-config.html" class="doc-card" style="background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 24px; text-decoration: none; color: inherit; transition: all 0.15s; display: block;">
+          <div style="width: 40px; height: 40px; background: rgba(99,102,241,0.1); border-radius: 8px; display: flex; align-items: center; justify-content: center; margin-bottom: 16px;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          </div>
+          <h3 style="font-size: 1rem; font-weight: 600; margin-bottom: 8px;">Plugin Config</h3>
+          <p style="font-size: 0.875rem; color: var(--text-secondary); margin: 0;">Configure pytest flags, env vars, and custom scrubbing patterns.</p>
+        </a>
+        <a href="/testpilot-ai/docs/api.html" class="doc-card" style="background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 24px; text-decoration: none; color: inherit; transition: all 0.15s; display: block;">
+          <div style="width: 40px; height: 40px; background: rgba(99,102,241,0.1); border-radius: 8px; display: flex; align-items: center; justify-content: center; margin-bottom: 16px;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="2"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
+          </div>
+          <h3 style="font-size: 1rem; font-weight: 600; margin-bottom: 8px;">API Reference</h3>
+          <p style="font-size: 0.875rem; color: var(--text-secondary); margin: 0;">Complete REST API docs for auth, triage, scrub, and usage endpoints.</p>
+        </a>
+        <a href="/testpilot-ai/docs/triage-rules.html" class="doc-card" style="background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 24px; text-decoration: none; color: inherit; transition: all 0.15s; display: block;">
+          <div style="width: 40px; height: 40px; background: rgba(99,102,241,0.1); border-radius: 8px; display: flex; align-items: center; justify-content: center; margin-bottom: 16px;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          </div>
+          <h3 style="font-size: 1rem; font-weight: 600; margin-bottom: 8px;">Triage Rules</h3>
+          <p style="font-size: 0.875rem; color: var(--text-secondary); margin: 0;">Learn about built-in classification rules and how to add custom patterns.</p>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <section class="cta-section">
+    <h2>Stop wasting hours finding root causes.<br>Start fixing them in seconds.</h2>
+    <p>Join 500+ engineers who stopped guessing and started shipping.</p>
+    <p style="font-size: 0.875rem; color: var(--text-muted); margin-bottom: 24px;">Free plan: 100 triages/month. No credit card. Cancel anytime.</p>
+    <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
+      <a href="/testpilot-ai/auth.html" class="btn btn-primary btn-large">Start Free Today</a>
+      <a href="/testpilot-ai/docs/quickstart.html" class="btn btn-secondary btn-large">Read the Quickstart (2 min)</a>
+    </div>
+  </section>
+
+  <footer>
+    <div class="footer-inner">
+      <div class="footer-brand">
+        <div class="logo">TestPilot</div>
+        <p>AI-powered test failure triage & scrubbing for modern teams.</p>
+      </div>
+      <div class="footer-links">
+        <div>
+          <h4>Product</h4>
+          <a href="#features">Features</a>
+          <a href="#pricing">Pricing</a>
+          <a href="/testpilot-ai/dashboard.html">Dashboard</a>
+        </div>
+        <div>
+          <h4>Resources</h4>
+          <a href="/testpilot-ai/docs/">Documentation</a>
+          <a href="/testpilot-ai/docs/api.html">API Reference</a>
+          <a href="#how-it-works">How It Works</a>
+        </div>
+        <div>
+          <h4>Company</h4>
+          <a href="https://github.com/alirohimi/testpilot-ai">GitHub</a>
+          <a href="/testpilot-ai/auth.html">Sign In</a>
+        </div>
+      </div>
+    </div>
+    <div class="footer-bottom">© 2025 TestPilot AI. All rights reserved.</div>
+  </footer>
+
+  <script>
+    function toggleMobileMenu() {
+      document.getElementById('nav-links').classList.toggle('open');
+    }
+    
+    // Close mobile menu when clicking a link
+    document.querySelectorAll('.nav-links a').forEach(link => {
+      link.addEventListener('click', () => {
+        document.getElementById('nav-links').classList.remove('open');
+      });
+    });
+  </script>
+</body>
+</html>

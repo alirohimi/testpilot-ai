@@ -8,15 +8,15 @@ from contextlib import contextmanager
 
 from .models import Base
 
-# Database URL from environment
+# Database URL from environment or default to SQLite for testing
 DATABASE_URL = os.getenv(
     "DATABASE_URL",
-    "postgresql://testpilot:testpilot@localhost:5432/testpilot"
+    os.getenv("TEST_DATABASE_URL", "sqlite:///./testpilot.db")
 )
 
-# Fallback for development
-if DATABASE_URL == "postgresql://testpilot:testpilot@localhost:5432/testpilot":
-    print("⚠️  Using default database URL. Set DATABASE_URL environment variable for production.")
+# Use in-memory SQLite for testing if TESTING environment variable is set
+if os.getenv("TESTING"):
+    DATABASE_URL = "sqlite:///:memory:"
 
 # Create engine
 engine = create_engine(

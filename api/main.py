@@ -1,17 +1,19 @@
 """Main FastAPI application for TestPilot AI SaaS."""
 
+import hashlib
 import os
 from datetime import datetime, timedelta
 from typing import List, Optional
 
 from fastapi import FastAPI, Depends, HTTPException, status, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, FileResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 # Initialize database
 from .database import init_db, get_db_session
-from .models import Base
+from .models import Base, User, APIKey, Subscription, UsageLog
 from .auth import (
     create_access_token,
     authenticate_user,
@@ -59,19 +61,61 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Mount static files (HTML/CSS/JS)
+import os
+_ui_root = os.path.join(os.path.dirname(os.path.dirname(__file__)), "web", "ui")
+if os.path.isdir(_ui_root):
+    app.mount("/testpilot-ai", StaticFiles(directory=_ui_root, html=True), name="static")
+
+# Also serve landing page at root of mount
+_landing_root = os.path.join(os.path.dirname(os.path.dirname(__file__)), "web", "landing")
+if os.path.isdir(_landing_root) and not os.path.isfile(os.path.join(_ui_root, "index.html")):
+    # Create a symlink so landing/index.html is accessible at /testpilot-ai/
+    _landing_index = os.path.join(_ui_root, "index.html")
+    if not os.path.exists(_landing_index):
+        os.symlink(
+            os.path.relpath(os.path.join(_landing_root, "index.html"), _ui_root),
+            _landing_index
+        )
+
 
 # =====================
 # Request/Response Models
 # =====================
 
 class UserRegister(BaseModel):
-    email: str
-    password: str
+    email: str = Field(..., min_length=1, description="Email must not be empty")
+    password: str = Field(..., min_length=8, description="Password must be at least 8 characters")
     full_name: Optional[str] = None
+    class Config:
+        @classmethod
+        def validate_email(cls, v):
+            if not v or not v.strip():
+                raise ValueError('Email cannot be empty')
+            if '@' not in v or '.' not in v:
+                raise ValueError('Invalid email format')
+            return v.lower().strip()
+        @classmethod
+        def validate_password(cls, v):
+            if not v or len(v) < 8:
+                raise ValueError('Password must be at least 8 characters')
+            return v
+
 
 class UserLogin(BaseModel):
-    email: str
-    password: str
+    email: str = Field(..., min_length=1, description="Email must not be empty")
+    password: str = Field(..., min_length=1, description="Password must not be empty")
+    class Config:
+        @classmethod
+        def validate_email(cls, v):
+            if not v or not v.strip():
+                raise ValueError('Email cannot be empty')
+            return v.lower().strip()
+        @classmethod
+        def validate_password(cls, v):
+            if not v:
+                raise ValueError('Password cannot be empty')
+            return v
 
 class TokenResponse(BaseModel):
     access_token: str
@@ -80,10 +124,11 @@ class TokenResponse(BaseModel):
     plan: str
 
 class APIKeyCreate(BaseModel):
-    name: str
+    name: str = Field(..., min_length=1, description="API key name is required")
     tier: str = "free"
 
 class APIKeyResponse(BaseModel):
+    id: int
     key: str
     name: str
     tier: str
@@ -172,14 +217,14 @@ async def login(credentials: UserLogin, db=Depends(get_db_session)):
     return TokenResponse(
         access_token=access_token,
         user_id=user.id,
-        plan=get_user_plan(user)
+        plan=get_user_plan(db, user)
     )
 
 
 @app.get("/api/v1/me")
-async def get_me(current_user: User = Depends(get_current_user)):
+async def get_me(current_user: User = Depends(get_current_user), db=Depends(get_db_session)):
     """Get current user info."""
-    limits = get_user_limits(current_user)
+    limits = get_user_limits(db, current_user)
     
     return {
         "id": current_user.id,
@@ -226,6 +271,7 @@ async def create_key(
     db.refresh(api_key)
     
     return APIKeyResponse(
+        id=api_key.id,
         key=full_key,
         name=key_data.name,
         tier=key_data.tier,
@@ -258,18 +304,26 @@ async def list_keys(
 
 @app.delete("/api/v1/keys/{key_id}")
 async def delete_key(
-    key_id: int,
+    key_id: str,  # Accept as string to handle invalid types gracefully
     current_user: User = Depends(get_current_user),
     db=Depends(get_db_session)
 ):
     """Delete an API key."""
-    key = db.query(APIKey).filter(
-        APIKey.id == key_id,
-        APIKey.user_id == current_user.id
-    ).first()
+    # Validate key_id is a valid integer
+    try:
+        key_id_int = int(key_id)
+    except (ValueError, TypeError):
+        raise HTTPException(status_code=400, detail="Invalid key ID format")
+    
+    # First check if key exists
+    key = db.query(APIKey).filter(APIKey.id == key_id_int).first()
     
     if not key:
         raise HTTPException(status_code=404, detail="API key not found")
+    
+    # Check ownership
+    if key.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized to delete this key")
     
     db.delete(key)
     db.commit()
@@ -287,8 +341,8 @@ async def get_usage(
     db=Depends(get_db_session)
 ):
     """Get usage statistics."""
-    plan = get_user_plan(current_user)
-    limits = get_user_limits(current_user)
+    plan = get_user_plan(db, current_user)
+    limits = get_user_limits(db, current_user)
     
     # Count this month's usage
     from sqlalchemy import func
@@ -312,26 +366,17 @@ async def get_usage(
 # Core API Endpoints
 # =====================
 
-@app.post("/api/v1/check", response_model=ApiResponse)
-@rate_limit(max_calls=API_RATE_LIMITS["check"]["max_calls"], period=API_RATE_LIMITS["check"]["period"])
-async def check_failure(
-    request: FailureCheck,
-    api_key_info: dict = Depends(get_api_key_user)
-):
-    """
-    Main endpoint: Analyze a test failure
-    
-    - **error_message**: The test failure traceback/error
-    - **test_code**: Optional test code for context
-    - **include_scrubbed**: Include sensitive data scrubbed version
-    - **use_llm**: Enable LLM analysis
-    """
+async def _analyze_failure(request: FailureCheck, api_key_info: dict, db=None) -> dict:
+    """Shared analysis logic used by both /check and /batch-check."""
     if not TESTPILOT_AVAILABLE:
         raise HTTPException(status_code=503, detail="TestPilot AI not configured")
-    
-    # Log usage
+
+    # Log usage - use provided db session or create one
     from .database import SessionLocal
-    db = SessionLocal()
+    own_db = False
+    if db is None:
+        db = SessionLocal()
+        own_db = True
     try:
         usage = UsageLog(
             api_key_id=api_key_info["key_id"],
@@ -343,17 +388,18 @@ async def check_failure(
         db.add(usage)
         db.commit()
     finally:
-        db.close()
-    
+        if own_db:
+            db.close()
+
     # Run analysis
     classifier = TestPilotClassifier()
     triage = TriageEngine()
     scrubber = Scrubber()
-    
+
     failure_type = classifier.classify(request.error_message)
     suggestion = triage.triage(request.error_message)
     scrubbed = scrubber.scrub(request.error_message)
-    
+
     # LLM analysis (if requested)
     llm_result = None
     if request.use_llm:
@@ -365,7 +411,7 @@ async def check_failure(
                     llm_result = llm.analyze_failure(request.error_message)
             except Exception as e:
                 llm_result = {"error": str(e)}
-    
+
     result = {
         "failure_type": failure_type.value,
         "severity": suggestion.get("severity", "medium"),
@@ -374,17 +420,38 @@ async def check_failure(
         "root_cause": suggestion.get("description", "Unknown"),
         "confidence": 0.9 if failure_type != FailureType.UNKNOWN else 0.3,
     }
-    
+
     if request.include_scrubbed and len(scrubbed) < len(request.error_message):
         result["scrubbed_error"] = scrubbed
-    
+
     if llm_result:
         result["llm_analysis"] = llm_result
-    
+
+    return result
+
+
+@app.post("/api/v1/check", response_model=ApiResponse)
+@rate_limit(max_calls=API_RATE_LIMITS["check"]["max_calls"], period=API_RATE_LIMITS["check"]["period"])
+async def check_failure(
+    http_request: Request = None,
+    request: FailureCheck = None,
+    api_key_info: dict = Depends(get_api_key_user),
+    db=Depends(get_db_session)
+):
+    """
+    Main endpoint: Analyze a test failure
+
+    - **error_message**: The test failure traceback/error
+    - **test_code**: Optional test code for context
+    - **include_scrubbed**: Include sensitive data scrubbed version
+    - **use_llm**: Enable LLM analysis
+    """
+    result = await _analyze_failure(request, api_key_info, db)
+
     request_id = hashlib.md5(
         f"{request.error_message}{datetime.utcnow().isoformat()}".encode()
     ).hexdigest()[:12]
-    
+
     return ApiResponse(
         success=True,
         result=result,
@@ -397,15 +464,16 @@ async def check_failure(
 @app.post("/api/v1/batch-check")
 @rate_limit(max_calls=API_RATE_LIMITS["batch_check"]["max_calls"], period=API_RATE_LIMITS["batch_check"]["period"])
 async def batch_check(
-    requests: List[FailureCheck],
+    http_request: Request = None,
+    requests: List[FailureCheck] = None,
     api_key_info: dict = Depends(get_api_key_user)
 ):
     """Process multiple failures in batch."""
     results = []
     for req in requests:
-        response = await check_failure(req, api_key_info)
-        results.append(response.result)
-    
+        result = await _analyze_failure(req, api_key_info)
+        results.append(result)
+
     return {"results": results, "count": len(results)}
 
 
@@ -415,11 +483,12 @@ async def batch_check(
 
 @app.get("/api/v1/subscription")
 async def get_subscription(
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
+    db=Depends(get_db_session)
 ):
     """Get current subscription details."""
-    plan = get_user_plan(current_user)
-    limits = get_user_limits(current_user)
+    plan = get_user_plan(db, current_user)
+    limits = get_user_limits(db, current_user)
     
     return {
         "plan": plan,

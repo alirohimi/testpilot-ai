@@ -4,6 +4,8 @@ import os
 import time
 from functools import wraps
 from typing import Callable, Any
+from fastapi import Request
+import inspect
 
 try:
     import redis
@@ -36,12 +38,38 @@ def rate_limit(max_calls: int = 100, period: int = 3600, key_prefix: str = "rate
         key_prefix: Prefix for Redis key
     """
     def decorator(func: Callable) -> Callable:
+        # Get the original function signature
+        sig = inspect.signature(func)
+        
+        # Build new signature with request parameter if not present
+        params = list(sig.parameters.values())
+        request_param = None
+        for p in params:
+            if p.name == 'http_request':
+                request_param = p
+                break
+        
+        if request_param is None:
+            # Add http_request as first parameter
+            new_param = inspect.Parameter('http_request', inspect.Parameter.KEYWORD_ONLY, default=None)
+            params = [new_param] + params
+        
+        new_sig = sig.replace(parameters=params)
+        
         @wraps(func)
         async def wrapper(*args, **kwargs) -> Any:
-            # Get client identifier
-            request = kwargs.get('request')
+            # Extract request - FastAPI passes Request as 'http_request' kwarg
+            request = kwargs.get('http_request')
+            
+            # If not found, check positional args for Request object
+            if request is None and len(args) > 0:
+                potential_request = args[0]
+                # Only use it if it's actually a Request (has scope attribute)
+                if hasattr(potential_request, 'scope') and potential_request.scope.get('type') == 'http':
+                    request = potential_request
+            
             if request:
-                client_id = request.client.host
+                client_id = request.client.host if request.client else "unknown"
             else:
                 client_id = "unknown"
             
@@ -81,6 +109,9 @@ def rate_limit(max_calls: int = 100, period: int = 3600, key_prefix: str = "rate
                     )
             
             return await func(*args, **kwargs)
+        
+        # Preserve the signature for FastAPI's dependency injection
+        wrapper.__signature__ = new_sig  # type: ignore[attr-defined]
         
         return wrapper
     return decorator

@@ -140,12 +140,16 @@ def cancel_subscription(subscription_id: str) -> Dict[str, Any]:
         raise Exception(f"Failed to cancel subscription: {e}")
 
 
-def get_user_plan(user: User) -> str:
+def get_user_plan(db, user: User) -> str:
     """Get current plan for user."""
-    # Check for active subscription
-    active_sub = user.subscriptions.filter(
-        Subscription.status == "active"
-    ).order_by(Subscription.created_at.desc()).first()
+    # Check for active subscription via db query
+    from api.models import Subscription
+    active_sub = (
+        db.query(Subscription)
+        .filter(Subscription.user_id == user.id, Subscription.status == "active")
+        .order_by(Subscription.created_at.desc())
+        .first()
+    )
     
     if active_sub:
         return active_sub.plan_id
@@ -153,9 +157,9 @@ def get_user_plan(user: User) -> str:
     return "free"
 
 
-def get_user_limits(user: User) -> Dict[str, Any]:
+def get_user_limits(db, user: User) -> Dict[str, Any]:
     """Get usage limits for user's plan."""
-    plan = get_user_plan(user)
+    plan = get_user_plan(db, user)
     plan_config = PLANS.get(plan, PLANS["free"])
     
     return {

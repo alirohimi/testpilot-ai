@@ -18,14 +18,11 @@ DATABASE_URL = os.getenv(
 if os.getenv("TESTING"):
     DATABASE_URL = "sqlite:///:memory:"
 
-# Create engine
-engine = create_engine(
-    DATABASE_URL,
-    pool_size=10,
-    max_overflow=20,
-    pool_pre_ping=True,
-    pool_recycle=3600,
-)
+# Create engine — pool tuning only applies to Postgres, not SQLite
+_engine_kwargs: dict = {"pool_pre_ping": True}
+if "sqlite" not in DATABASE_URL:
+    _engine_kwargs.update(pool_size=10, max_overflow=20, pool_recycle=3600)
+engine = create_engine(DATABASE_URL, **_engine_kwargs)
 
 # Session factory
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)

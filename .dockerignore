@@ -1,0 +1,22 @@
+# VCS / caches
+.git
+.gitignore
+.pytest_cache
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Local data / secrets
+testpilot.db
+*.db
+.env
+.env.*
+
+# Dev / test / docs (not needed at runtime)
+tests/
+.github/
+*.md
+deploy-gh-pages.sh
+scripts/
+docker-compose.yml

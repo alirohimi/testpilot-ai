@@ -16,7 +16,6 @@ testpilot.db
 # Dev / test / docs (not needed at runtime)
 tests/
 .github/
-*.md
 deploy-gh-pages.sh
 scripts/
 docker-compose.yml

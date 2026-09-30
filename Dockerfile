@@ -12,7 +12,6 @@ COPY pyproject.toml .
 COPY api/ api/
 COPY testpilot_ai/ testpilot_ai/
 COPY web/ web/
-COPY config/ config/
 
 # Install the package
 RUN pip install --no-cache-dir -e ".[prod]"

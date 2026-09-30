@@ -1,34 +1,40 @@
-# Render Deployment Configuration
+# TestPilot AI — free-tier, high-quality deployment stack
+#
+#   App  : Render FREE web service (Python 3.13, uvicorn on $PORT)
+#   DB   : Supabase (managed, free-tier Postgres) via DATABASE_URL env var
+#   Cache: none (app auto-falls back to in-memory rate limiting — no Redis needed)
+#
+# No paid Render Postgres/Redis is provisioned, so the whole thing runs on free tiers.
+
 services:
-  # API Service
+  # ── Web app ──────────────────────────────────────────────────────────────
   - type: web
-    name: testpilot-ai-api
-    env: python
+    name: testpilot-ai
+    runtime: python
+    pythonVersion: "3.13"
+    region: oregon
+    plan: free
     buildCommand: pip install -r requirements.txt
     startCommand: uvicorn api.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
     envVars:
+      # Supabase Postgres. Paste your Supabase connection string
+      # (psycopg2-compatible):
+      # postgresql://postgres.<ref>:<pass>@aws-0-<region>.pooler.supabase.com:6543/postgres
       - key: DATABASE_URL
-        fromDatabase:
-          name: testpilot-db
-          property: connectionString
-      - key: REDIS_URL
-        fromService:
-          type: redis
-          name: testpilot-redis
-          property: connectionString
+        sync: false
+      # App secret — auto-generated if left blank
       - key: SECRET_KEY
         generateValue: true
-      - key: STRIPE_SECRET_KEY
-        sync: false
+      # LLM / payments keys (optional, sync=false so Render never auto-fills)
       - key: OPENAI_API_KEY
         sync: false
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      # Disable Redis — the app uses its in-memory fallback automatically
+      - key: REDIS_URL
+        value: ""
 
-# PostgreSQL Database
-databases:
-  - name: testpilot-db
-    plan: starter
-
-# Redis Cache
-redisInstances:
-  - name: testpilot-redis
-    plan: starter
+# No paid Render Postgres or Redis is provisioned; data lives in Supabase.
+# The app's database layer (api/database.py) already supports Postgres via
+# DATABASE_URL — pool tuning is applied only for non-SQLite URLs.

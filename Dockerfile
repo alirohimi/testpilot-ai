@@ -8,9 +8,9 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy project files
-COPY pyproject.toml .
+COPY pyproject.toml setup.py README.md .
 COPY api/ api/
-COPY testpilot_ai/ testpilot_ai/
+COPY src/ src/
 COPY web/ web/
 
 # Install the package

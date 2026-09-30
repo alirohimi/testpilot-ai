@@ -2,7 +2,7 @@
 # Fly.io Deployment
 # ==================
 
-app = "testpilot-ai"
+app = "testpilot-ai-tb8dcq"
 primary_region = "lax"
 main_process = "uvicorn api.main:app --host 0.0.0.0 --port 8000"
 

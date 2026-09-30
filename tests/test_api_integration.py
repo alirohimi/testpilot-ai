@@ -303,9 +303,10 @@ class TestDatabaseTests:
         resp = client.post("/api/v1/auth/register", json=data)
         assert resp.status_code == 400
 
-    def test_key_prefix_length(self, client, auth_headers):
+    def test_key_prefix_length(self, client, valid_token):
         """Data validation: Key prefix is truncated correctly."""
-        resp = client.post("/api/v1/keys", json={"name": "Prefix Test"}, headers=auth_headers)
+        headers = {"Authorization": f"Bearer {valid_token}"}
+        resp = client.post("/api/v1/keys", json={"name": "Prefix Test"}, headers=headers)
         prefix = resp.json()["prefix"]
         assert prefix.endswith("...")
         assert len(prefix) > 8

@@ -1,4 +1,4 @@
-FROM python:3.11-slim
+FROM python:3.13-slim
 
 WORKDIR /app
 
@@ -7,12 +7,15 @@ RUN apt-get update && apt-get install -y \
     gcc \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements first for caching
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# Copy project files
+COPY pyproject.toml .
+COPY api/ api/
+COPY testpilot_ai/ testpilot_ai/
+COPY web/ web/
+COPY config/ config/
 
-# Copy application
-COPY . .
+# Install the package
+RUN pip install --no-cache-dir -e ".[prod]"
 
 # Expose port
 EXPOSE 8000

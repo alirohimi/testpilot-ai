@@ -13,13 +13,15 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from api.main import app
-from api.database import get_db_session
+from api.database import get_db_session, engine
 from api.models import Base
 
-
-# Use in-memory SQLite for testing (unique per session to avoid conflicts)
+# Use in-memory SQLite for testing
 SQLALCHEMY_DATABASE_URL = "sqlite:///:memory:"
 
+# ---------------------------------------------------------------------------
+# Database fixtures (shared across all test modules)
+# ---------------------------------------------------------------------------
 
 @pytest.fixture(scope="session")
 def test_engine():
@@ -31,7 +33,6 @@ def test_engine():
     )
     Base.metadata.create_all(bind=eng)
     yield eng
-    # Cleanup at end of session
     Base.metadata.drop_all(bind=eng)
 
 
@@ -60,6 +61,36 @@ def client(test_session):
         yield c
     app.dependency_overrides.clear()
 
+
+# ---------------------------------------------------------------------------
+# Local E2E test server (for test_frontend_e2e_local.py)
+# ---------------------------------------------------------------------------
+
+@pytest.fixture(scope="session")
+def e2e_server(test_engine):
+    """In-process server for local E2E tests — no subprocess needed."""
+    # Override DB for the server too
+    SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=test_engine)
+
+    def override_get_db():
+        db = SessionLocal()
+        try:
+            yield db
+        finally:
+            db.close()
+
+    app.dependency_overrides[get_db_session] = override_get_db
+    Base.metadata.create_all(bind=test_engine)
+
+    with TestClient(app) as c:
+        yield c
+
+    app.dependency_overrides.clear()
+
+
+# ---------------------------------------------------------------------------
+# Auth / user fixtures
+# ---------------------------------------------------------------------------
 
 @pytest.fixture
 def test_password():

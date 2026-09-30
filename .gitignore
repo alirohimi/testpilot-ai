@@ -51,4 +51,4 @@ Thumbs.db
 .env.local
 
 # GitHub
-.github/workflows/*.yml
+!.github/

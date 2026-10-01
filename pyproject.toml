@@ -43,6 +43,7 @@ dev = [
 prod = [
     "gunicorn>=22.0.0",
     "uvicorn[standard]>=0.30.0",
+    "sentry-sdk[fastapi]>=2.0.0",
 ]
 
 [tool.setuptools.packages.find]

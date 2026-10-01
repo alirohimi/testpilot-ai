@@ -1,5 +1,6 @@
 """Stripe payment integration for TestPilot AI."""
 
+import logging
 import os
 from datetime import datetime
 from typing import Any
@@ -7,6 +8,8 @@ from typing import Any
 import stripe
 
 from .models import Subscription, User
+
+logger = logging.getLogger(__name__)
 
 # Configure Stripe
 stripe.api_key = os.getenv("STRIPE_SECRET_KEY", "sk_test_placeholder")
@@ -175,8 +178,18 @@ def get_user_limits(db, user: User) -> dict[str, Any]:
 
 
 # Webhook handlers
-def handle_webhook(payload: bytes, sig_header: str) -> dict[str, Any]:
-    """Handle Stripe webhook events."""
+def handle_webhook(payload: bytes, sig_header: str, db=None) -> dict[str, Any]:
+    """Handle Stripe webhook events and persist subscription changes to the DB.
+
+    Args:
+        payload: raw request body (bytes)
+        sig_header: Stripe-Signature header
+        db: SQLAlchemy session (injected by the endpoint)
+
+    Returns: dict describing what was done (JSON-serializable).
+
+    Raises: Exception on invalid payload/signature (endpoint maps to 400).
+    """
     webhook_secret = os.getenv("STRIPE_WEBHOOK_SECRET", "whsec_placeholder")
 
     try:
@@ -186,27 +199,119 @@ def handle_webhook(payload: bytes, sig_header: str) -> dict[str, Any]:
     except stripe.error.SignatureVerificationError:
         raise Exception("Invalid signature")
 
-    # Handle events
+    # No DB session (e.g. unit test calling in isolation) — acknowledge only.
+    if db is None:
+        return {"status": "acknowledged_no_db", "event_type": event.type}
+
+    def _find_sub_by_customer(customer_id: str) -> Subscription | None:
+        return (
+            db.query(Subscription)
+            .filter(Subscription.stripe_customer_id == customer_id)
+            .order_by(Subscription.created_at.desc())
+            .first()
+        )
+
+    def _find_sub_by_subscription_id(subscription_id: str) -> Subscription | None:
+        return (
+            db.query(Subscription)
+            .filter(Subscription.stripe_subscription_id == subscription_id)
+            .order_by(Subscription.created_at.desc())
+            .first()
+        )
+
+    # ---------------------------------------------------------------
     if event.type == "checkout.session.completed":
-        # Fulfill the order
-        _session = event.data.object
-        _user_id = _session.metadata.get("user_id")
-        # Update subscription in database
-        return {"status": "webhook_received"}
+        session = event.data.object
+        user_id = int(session.metadata.get("user_id", 0))
+        customer_id = session.customer
+        subscription_id = session.subscription
+        plan = session.metadata.get("plan", "pro")
 
+        if not user_id:
+            return {"status": "ignored", "reason": "missing user_id metadata"}
+
+        user = db.query(User).filter(User.id == user_id).first()
+        if not user:
+            return {"status": "ignored", "reason": f"unknown user {user_id}"}
+
+        sub = (
+            _find_sub_by_customer(customer_id) if customer_id else None
+        ) or Subscription(user_id=user_id)
+
+        sub.stripe_customer_id = customer_id
+        sub.stripe_subscription_id = subscription_id
+        sub.plan_id = plan
+        sub.status = "active"
+        db.add(sub)
+        db.commit()
+        logger.info(f"webhook checkout completed: user {user_id} -> {plan}")
+        return {"status": "fulfilled", "user_id": user_id, "plan": plan}
+
+    # ---------------------------------------------------------------
     elif event.type == "invoice.payment_succeeded":
-        _invoice = event.data.object
-        # Update subscription status
-        return {"status": "payment_succeeded"}
+        invoice = event.data.object
+        customer_id = invoice.customer
+        # Invoice.period_start / period_end are unix timestamps (Stripe API)
+        sub = _find_sub_by_customer(customer_id) if customer_id else None
+        if not sub:
+            return {"status": "ignored", "reason": f"unknown customer {customer_id}"}
 
+        sub.status = "active"
+        if getattr(invoice, "period_start", None):
+            sub.current_period_start = datetime.fromtimestamp(invoice.period_start)
+        if getattr(invoice, "period_end", None):
+            sub.current_period_end = datetime.fromtimestamp(invoice.period_end)
+        db.commit()
+        logger.info(
+            "webhook payment succeeded: customer %s active until %s",
+            customer_id,
+            sub.current_period_end,
+        )
+        return {"status": "payment_recorded", "customer": customer_id}
+
+    # ---------------------------------------------------------------
     elif event.type == "customer.subscription.updated":
-        _subscription = event.data.object
-        # Update plan/limits
-        return {"status": "subscription_updated"}
+        s = event.data.object
+        sub = _find_sub_by_subscription_id(s.id)
+        if not sub and s.customer:
+            sub = _find_sub_by_customer(s.customer)
+        if not sub:
+            return {"status": "ignored", "reason": f"unknown subscription {s.id}"}
 
+        sub.status = s.status  # active, past_due, trialing, canceled...
+        sub.cancel_at_period_end = bool(getattr(s, "cancel_at_period_end", False))
+        if getattr(s, "current_period_start", None):
+            sub.current_period_start = datetime.fromtimestamp(s.current_period_start)
+        if getattr(s, "current_period_end", None):
+            sub.current_period_end = datetime.fromtimestamp(s.current_period_end)
+        # Plan change: derive from the price on the first item
+        items = getattr(s, "items", None)
+        if items and getattr(items, "data", None):
+            price_id = items.data[0].price.id
+            for plan_name, cfg in PLANS.items():
+                if cfg["stripe_price_id"] == price_id:
+                    sub.plan_id = plan_name
+                    break
+        db.commit()
+        logger.info(
+            f"webhook subscription updated: {s.id} -> {sub.status}/{sub.plan_id}"
+        )
+        return {"status": "updated", "subscription": s.id, "plan": sub.plan_id}
+
+    # ---------------------------------------------------------------
     elif event.type == "customer.subscription.deleted":
-        _subscription = event.data.object
-        # Downgrade to free
-        return {"status": "subscription_deleted"}
+        s = event.data.object
+        sub = _find_sub_by_subscription_id(s.id)
+        if not sub and s.customer:
+            sub = _find_sub_by_customer(s.customer)
+        if not sub:
+            return {"status": "ignored", "reason": f"unknown subscription {s.id}"}
 
-    return {"status": "event_handled"}
+        sub.status = "canceled"
+        sub.plan_id = "free"
+        sub.cancel_at_period_end = False
+        db.commit()
+        logger.info(f"webhook subscription deleted: {s.id} -> downgraded to free")
+        return {"status": "downgraded_to_free", "subscription": s.id}
+
+    return {"status": "event_handled", "event_type": event.type}

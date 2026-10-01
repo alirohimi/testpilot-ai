@@ -26,10 +26,24 @@ services:
       # App secret — auto-generated if left blank
       - key: SECRET_KEY
         generateValue: true
+      # CORS allowlist — set to your frontend origin(s); comma-separated.
+      # Leave unset in dev; MUST be set in production (never "*").
+      - key: ALLOWED_ORIGINS
+        sync: false
+      # Structured logging (machine-parseable JSON for Render's log viewer)
+      - key: LOG_FORMAT
+        value: "json"
+      - key: LOG_LEVEL
+        value: "INFO"
       # LLM / payments keys (optional, sync=false so Render never auto-fills)
       - key: OPENAI_API_KEY
         sync: false
       - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+      # Sentry (optional error tracking; app no-ops when SENTRY_DSN is empty)
+      - key: SENTRY_DSN
         sync: false
       # Disable Redis — the app uses its in-memory fallback automatically
       - key: REDIS_URL

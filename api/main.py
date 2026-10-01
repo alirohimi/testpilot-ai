@@ -20,7 +20,7 @@ from .auth import (
 
 # Initialize database
 from .database import get_db_session, init_db
-from .models import APIKey, Subscription, UsageLog, User
+from .models import APIKey, FailureAnalysis, Subscription, UsageLog, User
 from .rate_limiter import API_RATE_LIMITS, rate_limit, redis_client
 from .stripe_integration import (
     cancel_subscription,
@@ -42,6 +42,77 @@ except ImportError:
     TESTPILOT_AVAILABLE = False
     print("⚠️  TestPilot AI core not available in API context")
 
+
+# ---------------------------------------------------------------------------
+# Structured logging
+# ---------------------------------------------------------------------------
+# In production (JSON), log lines are machine-parseable by aggregators
+# (Loki, CloudWatch, Sentry). In dev, human-readable. Controlled by LOG_FORMAT.
+import json as _json
+import logging
+import sys
+
+
+def _setup_logging() -> logging.Logger:
+    logger = logging.getLogger("testpilot")
+    if logger.handlers:  # already configured (e.g. by a parent process)
+        return logger
+
+    level = os.getenv("LOG_LEVEL", "INFO").upper()
+    logger.setLevel(getattr(logging, level, logging.INFO))
+
+    use_json = os.getenv("LOG_FORMAT", "json").lower() == "json"
+
+    if use_json:
+
+        class _JsonFormatter(logging.Formatter):
+            def format(self, record: logging.LogRecord) -> str:
+                payload: dict = {
+                    "ts": self.formatTime(record, "%Y-%m-%dT%H:%M:%S%z"),
+                    "level": record.levelname,
+                    "logger": record.name,
+                    "msg": record.getMessage(),
+                }
+                if record.exc_info:
+                    payload["exc_info"] = self.formatException(record.exc_info)
+                return _json.dumps(payload, default=str)
+
+        handler = logging.StreamHandler(stream=sys.stdout)
+        handler.setFormatter(_JsonFormatter())
+    else:
+        handler = logging.StreamHandler(stream=sys.stdout)
+        handler.setFormatter(
+            logging.Formatter("%(asctime)s %(levelname)s %(name)s - %(message)s")
+        )
+
+    logger.addHandler(handler)
+    logger.propagate = False
+    return logger
+
+
+logger = _setup_logging()
+
+
+def _init_sentry() -> None:
+    """Initialize Sentry if SENTRY_DSN is set. No-op otherwise (free tier)."""
+    dsn = os.getenv("SENTRY_DSN", "")
+    if not dsn:
+        return
+    try:
+        import sentry_sdk
+
+        sentry_sdk.init(
+            dsn=dsn,
+            traces_sample_rate=float(os.getenv("SENTRY_TRACES_SAMPLE_RATE", "0.1")),
+            environment=os.getenv("APP_ENV", "production"),
+        )
+        logger.info("Sentry initialized")
+    except Exception as e:  # pragma: no cover - optional dependency
+        logger.warning(f"Sentry init failed (continuing without it): {e}")
+
+
+_init_sentry()
+
 # Create FastAPI app
 app = FastAPI(
     title="TestPilot AI API",
@@ -51,10 +122,20 @@ app = FastAPI(
     redoc_url="/redoc",
 )
 
-# CORS middleware
+# CORS middleware — explicit allowlist (never use "*" in production)
+_ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "")
+if _ALLOWED_ORIGINS:
+    _origins = [o.strip() for o in _ALLOWED_ORIGINS.split(",") if o.strip()]
+else:
+    # Development fallback — restrict to localhost in prod via env
+    _origins = os.getenv(
+        "CORS_ORIGINS_DEV",
+        "http://localhost:3000,http://localhost:5173,http://localhost:8080",
+    ).split(",")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -250,6 +331,79 @@ async def get_me(
         "monthly_limit": limits["monthly_limit"],
         "features": limits["features"],
     }
+
+
+def _row_to_dict(obj, **extra) -> dict:
+    """Serialize a SQLAlchemy row to a JSON-safe dict of its column values."""
+    data = {
+        col.name: getattr(obj, col.name)
+        for col in obj.__table__.columns
+        if getattr(obj, col.name) is not None
+    }
+    for k, v in extra.items():
+        if v is not None:
+            data[k] = v
+    # Normalize non-JSON types (datetime, etc.) to ISO strings
+    return {k: v.isoformat() if hasattr(v, "isoformat") else v for k, v in data.items()}
+
+
+@app.get("/api/v1/me/export")
+async def export_user_data(
+    current_user: User = Depends(get_current_user), db=Depends(get_db_session)
+):
+    """GDPR data portability: export all data the platform holds for this user."""
+    api_keys = [
+        _row_to_dict(k, redacted_key=f"{k.prefix}*** (hash: {k.key_hash[:12]}…)")
+        for k in db.query(APIKey).filter(APIKey.user_id == current_user.id).all()
+    ]
+    subscriptions = [
+        _row_to_dict(s)
+        for s in db.query(Subscription)
+        .filter(Subscription.user_id == current_user.id)
+        .all()
+    ]
+    usage_logs = [
+        _row_to_dict(u)
+        for u in db.query(UsageLog).filter(UsageLog.user_id == current_user.id).all()
+    ]
+    analyses = [
+        _row_to_dict(a)
+        for a in db.query(FailureAnalysis)
+        .filter(FailureAnalysis.user_id == current_user.id)
+        .all()
+    ]
+    return {
+        "exported_at": datetime.utcnow().isoformat(),
+        "account": _row_to_dict(current_user),
+        "api_keys": api_keys,
+        "subscriptions": subscriptions,
+        "usage_logs": usage_logs,
+        "failure_analyses": analyses,
+    }
+
+
+@app.delete("/api/v1/me")
+async def delete_account(
+    current_user: User = Depends(get_current_user), db=Depends(get_db_session)
+):
+    """GDPR right to erasure: permanently delete the account and all associated data.
+
+    Child rows are removed explicitly (portable across SQLite/Postgres) rather
+    than relying solely on DB-level ON DELETE CASCADE, then the user is deleted.
+    """
+    logger.info(f"GDPR delete: user id={current_user.id} email={current_user.email}")
+    uid = current_user.id
+    db.query(UsageLog).filter(UsageLog.user_id == uid).delete(synchronize_session=False)
+    db.query(APIKey).filter(APIKey.user_id == uid).delete(synchronize_session=False)
+    db.query(Subscription).filter(Subscription.user_id == uid).delete(
+        synchronize_session=False
+    )
+    db.query(FailureAnalysis).filter(FailureAnalysis.user_id == uid).delete(
+        synchronize_session=False
+    )
+    db.delete(current_user)
+    db.commit()
+    return {"success": True, "deleted_user_id": uid}
 
 
 # =====================
@@ -561,17 +715,29 @@ async def cancel_subscription_endpoint(current_user: User = Depends(get_current_
 
 
 @app.post("/api/v1/webhooks/stripe")
-async def stripe_webhook(request: Request, raw_body: bytes):
-    """Handle Stripe webhook events."""
+async def stripe_webhook(
+    request: Request,
+    raw_body: bytes = None,
+    db=Depends(get_db_session),
+):
+    """Handle Stripe webhook events.
+
+    NOTE: raw_body must be the *raw* request bytes (Stripe signs the raw
+    body). Starlette's request.body() returns bytes, so callers that hit this
+    endpoint via HTTP should pass request.body() directly, not JSON-decoded.
+    """
+    if raw_body is None:
+        raw_body = await request.body()
     signature = request.headers.get("stripe-signature")
 
     if not signature:
         raise HTTPException(status_code=400, detail="Missing signature")
 
     try:
-        result = handle_webhook(raw_body, signature)
-        return JSONResponse(content=result)
+        result = handle_webhook(raw_body, signature, db)
+        return JSONResponse(content=result, status_code=200)
     except Exception as e:
+        logger.error(f"Stripe webhook processing failed: {e}")
         raise HTTPException(status_code=400, detail=str(e))
 
 

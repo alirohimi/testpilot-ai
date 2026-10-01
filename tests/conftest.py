@@ -1,19 +1,20 @@
 """Conftest.py - Shared fixtures and configuration for all tests"""
 
-import pytest
-import sys
 import os
+import sys
+
+import pytest
 
 # Add project root to path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
+from api.database import get_db_session
 from api.main import app
-from api.database import get_db_session, engine
 from api.models import Base
 
 # Use in-memory SQLite for testing
@@ -22,6 +23,7 @@ SQLALCHEMY_DATABASE_URL = "sqlite:///:memory:"
 # ---------------------------------------------------------------------------
 # Database fixtures (shared across all test modules)
 # ---------------------------------------------------------------------------
+
 
 @pytest.fixture(scope="session")
 def test_engine():
@@ -50,6 +52,7 @@ def test_session(test_engine):
 @pytest.fixture
 def client(test_session):
     """Test client with database override."""
+
     def override_get_db():
         try:
             yield test_session
@@ -72,6 +75,7 @@ def client(test_session):
 # ---------------------------------------------------------------------------
 # Local E2E test server (for test_frontend_e2e_local.py)
 # ---------------------------------------------------------------------------
+
 
 @pytest.fixture(scope="session")
 def e2e_server(test_engine):
@@ -99,6 +103,7 @@ def e2e_server(test_engine):
 # Auth / user fixtures
 # ---------------------------------------------------------------------------
 
+
 @pytest.fixture
 def test_password():
     """Standard test password."""
@@ -111,7 +116,7 @@ def user_data(test_password):
     return {
         "email": "test@example.com",
         "password": test_password,
-        "full_name": "Test User"
+        "full_name": "Test User",
     }
 
 
@@ -128,7 +133,7 @@ def registered_user(client, user_data, request):
         "token": resp_data["access_token"],
         "user_id": resp_data["user_id"],
         "email": unique_email,
-        "password": user_data["password"]
+        "password": user_data["password"],
     }
 
 
@@ -141,11 +146,8 @@ def auth_headers(registered_user):
 @pytest.fixture
 def api_key_with_headers(client, auth_headers):
     """Create API key and return both key and headers."""
-    response = client.post("/api/v1/keys",
-                           json={"name": "Test Key", "tier": "free"},
-                           headers=auth_headers)
+    response = client.post(
+        "/api/v1/keys", json={"name": "Test Key", "tier": "free"}, headers=auth_headers
+    )
     assert response.status_code in (200, 201)
-    return {
-        "key": response.json()["key"],
-        "headers": auth_headers
-    }
+    return {"key": response.json()["key"], "headers": auth_headers}

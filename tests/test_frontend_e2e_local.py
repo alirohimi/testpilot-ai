@@ -3,10 +3,9 @@
 These tests use an in-process FastAPI TestClient — no subprocess needed.
 """
 
-import pytest
 import re
-import sys
-import os
+
+import pytest
 
 # Configuration
 PROJECT_BASE = "/testpilot-ai"
@@ -81,36 +80,44 @@ class TestSignupFlow:
 
     def test_register_valid_user(self, e2e_server, request):
         """Valid registration should succeed."""
-        resp = e2e_server.post("/api/v1/auth/register", json={
-            "email": self._unique_email(request),
-            "password": "FreshPass123!",
-            "full_name": "Fresh User"
-        })
+        resp = e2e_server.post(
+            "/api/v1/auth/register",
+            json={
+                "email": self._unique_email(request),
+                "password": "FreshPass123!",
+                "full_name": "Fresh User",
+            },
+        )
         assert resp.status_code in (200, 201), f"Registration failed: {resp.json()}"
 
     def test_register_duplicate_email(self, e2e_server, request):
         """Duplicate email should be rejected."""
         unique_email = self._unique_email(request)
         # First registration
-        e2e_server.post("/api/v1/auth/register", json={
-            "email": unique_email,
-            "password": "DupPass123!",
-            "full_name": "Dup User"
-        })
+        e2e_server.post(
+            "/api/v1/auth/register",
+            json={
+                "email": unique_email,
+                "password": "DupPass123!",
+                "full_name": "Dup User",
+            },
+        )
         # Second registration with same email
-        resp = e2e_server.post("/api/v1/auth/register", json={
-            "email": unique_email,
-            "password": "DupPass123!",
-            "full_name": "Dup User 2"
-        })
+        resp = e2e_server.post(
+            "/api/v1/auth/register",
+            json={
+                "email": unique_email,
+                "password": "DupPass123!",
+                "full_name": "Dup User 2",
+            },
+        )
         assert resp.status_code == 400
 
     def test_register_empty_fields(self, e2e_server):
         """Empty fields should be rejected."""
-        resp = e2e_server.post("/api/v1/auth/register", json={
-            "email": "",
-            "password": ""
-        })
+        resp = e2e_server.post(
+            "/api/v1/auth/register", json={"email": "", "password": ""}
+        )
         assert resp.status_code == 422
 
 
@@ -119,44 +126,41 @@ class TestLoginFlow:
 
     def _register_and_login(self, e2e_server, email, password):
         """Helper to register and then login."""
-        e2e_server.post("/api/v1/auth/register", json={
-            "email": email,
-            "password": password,
-            "full_name": "Test User"
-        })
-        return e2e_server.post("/api/v1/auth/login", json={
-            "email": email,
-            "password": password
-        })
+        e2e_server.post(
+            "/api/v1/auth/register",
+            json={"email": email, "password": password, "full_name": "Test User"},
+        )
+        return e2e_server.post(
+            "/api/v1/auth/login", json={"email": email, "password": password}
+        )
 
     def test_login_valid_credentials(self, e2e_server):
         """Valid login should succeed."""
-        resp = self._register_and_login(e2e_server, "login_test@example.com", "LoginTest123!")
+        resp = self._register_and_login(
+            e2e_server, "login_test@example.com", "LoginTest123!"
+        )
         assert resp.status_code == 200
         assert "access_token" in resp.json()
 
     def test_login_wrong_password(self, e2e_server):
         """Wrong password should return 401."""
-        resp = e2e_server.post("/api/v1/auth/login", json={
-            "email": "nonexistent@example.com",
-            "password": "WrongPass123!"
-        })
+        resp = e2e_server.post(
+            "/api/v1/auth/login",
+            json={"email": "nonexistent@example.com", "password": "WrongPass123!"},
+        )
         assert resp.status_code == 401
 
     def test_login_nonexistent_user(self, e2e_server):
         """Non-existent user should return 401."""
-        resp = e2e_server.post("/api/v1/auth/login", json={
-            "email": "doesnotexist@example.com",
-            "password": "AnyPass123!"
-        })
+        resp = e2e_server.post(
+            "/api/v1/auth/login",
+            json={"email": "doesnotexist@example.com", "password": "AnyPass123!"},
+        )
         assert resp.status_code == 401
 
     def test_login_empty_fields(self, e2e_server):
         """Empty login fields should return 422."""
-        resp = e2e_server.post("/api/v1/auth/login", json={
-            "email": "",
-            "password": ""
-        })
+        resp = e2e_server.post("/api/v1/auth/login", json={"email": "", "password": ""})
         assert resp.status_code == 422
 
 
@@ -202,7 +206,7 @@ class TestCrossPageConsistency:
             if resp.status_code == 200:
                 html = resp.text
                 # Links should be project-relative
-                assert f'{PROJECT_BASE}/' in html or 'href="/' in html
+                assert f"{PROJECT_BASE}/" in html or 'href="/' in html
 
 
 class TestSecurity:
@@ -219,15 +223,15 @@ class TestSecurity:
     def test_no_plain_text_passwords_in_response(self, e2e_server):
         """Passwords should never appear in responses."""
         # Attempt a registration
-        e2e_server.post("/api/v1/auth/register", json={
-            "email": "sec_test@example.com",
-            "password": "SecurePass123!"
-        })
+        e2e_server.post(
+            "/api/v1/auth/register",
+            json={"email": "sec_test@example.com", "password": "SecurePass123!"},
+        )
         # Login
-        resp = e2e_server.post("/api/v1/auth/login", json={
-            "email": "sec_test@example.com",
-            "password": "SecurePass123!"
-        })
+        resp = e2e_server.post(
+            "/api/v1/auth/login",
+            json={"email": "sec_test@example.com", "password": "SecurePass123!"},
+        )
         response_str = str(resp.json())
         assert "SecurePass123!" not in response_str
         assert "secret" not in response_str.lower()
@@ -243,9 +247,11 @@ class TestErrorHandling:
 
     def test_malformed_json_returns_422(self, e2e_server):
         """Malformed JSON should return 422."""
-        resp = e2e_server.post("/api/v1/auth/register",
-                               content=b"{invalid json",
-                               headers={"Content-Type": "application/json"})
+        resp = e2e_server.post(
+            "/api/v1/auth/register",
+            content=b"{invalid json",
+            headers={"Content-Type": "application/json"},
+        )
         assert resp.status_code == 422
 
     def test_http_only_urls(self, e2e_server):
@@ -255,20 +261,23 @@ class TestErrorHandling:
             if resp.status_code == 200:
                 html = resp.text
                 # Check for http:// URLs (excluding localhost)
-                http_urls = [u for u in re.findall(r'http://[^"\s]+', html)
-                             if not u.startswith('http://localhost')]
+                http_urls = [
+                    u
+                    for u in re.findall(r'http://[^"\s]+', html)
+                    if not u.startswith("http://localhost")
+                ]
                 assert not http_urls, f"HTTP URLs found: {http_urls}"
 
     def test_password_not_in_response(self, e2e_server):
         """Password should never appear in API responses."""
-        e2e_server.post("/api/v1/auth/register", json={
-            "email": "secure@example.com",
-            "password": "MySecretPass123!"
-        })
-        resp = e2e_server.post("/api/v1/auth/login", json={
-            "email": "secure@example.com",
-            "password": "MySecretPass123!"
-        })
+        e2e_server.post(
+            "/api/v1/auth/register",
+            json={"email": "secure@example.com", "password": "MySecretPass123!"},
+        )
+        resp = e2e_server.post(
+            "/api/v1/auth/login",
+            json={"email": "secure@example.com", "password": "MySecretPass123!"},
+        )
         response_str = str(resp.json())
         assert "MySecretPass123!" not in response_str
         assert "secret" not in response_str.lower()

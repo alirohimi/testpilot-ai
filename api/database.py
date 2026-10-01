@@ -1,17 +1,16 @@
 """Database configuration and session management."""
 
 import os
-from sqlalchemy import create_engine
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
 from contextlib import contextmanager
+
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
 
 from .models import Base
 
 # Database URL from environment or default to SQLite for testing
 DATABASE_URL = os.getenv(
-    "DATABASE_URL",
-    os.getenv("TEST_DATABASE_URL", "sqlite:///./testpilot.db")
+    "DATABASE_URL", os.getenv("TEST_DATABASE_URL", "sqlite:///./testpilot.db")
 )
 
 # Use in-memory SQLite for testing if TESTING environment variable is set
@@ -58,4 +57,3 @@ def get_db_session():
 
 
 # Import models to ensure they're registered
-from . import models  # noqa: E402

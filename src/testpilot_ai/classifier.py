@@ -1,12 +1,12 @@
 """TestPilot AI - Failure classification module."""
 
-from typing import Dict, List, Optional, Tuple
-from enum import Enum
 import re
+from enum import Enum
 
 
 class FailureType(Enum):
     """Categories of test failures."""
+
     ASSERTION_ERROR = "assertion_error"
     VALUE_ERROR = "value_error"
     TYPE_ERROR = "type_error"
@@ -22,7 +22,7 @@ class FailureType(Enum):
 
 class TestPilotClassifier:
     """Classify test failures into categories."""
-    
+
     CLASSIFICATION_PATTERNS = {
         FailureType.ASSERTION_ERROR: [
             r"AssertionError",
@@ -75,14 +75,14 @@ class TestPilotClassifier:
             r"has no attribute",
         ],
     }
-    
+
     def __init__(self):
         self._compiled_patterns = {}
         for failure_type, patterns in self.CLASSIFICATION_PATTERNS.items():
             self._compiled_patterns[failure_type] = [
                 re.compile(p, re.IGNORECASE) for p in patterns
             ]
-    
+
     def classify(self, error_message: str) -> FailureType:
         """Classify an error message into a failure type."""
         for failure_type, patterns in self._compiled_patterns.items():
@@ -90,11 +90,11 @@ class TestPilotClassifier:
                 if pattern.search(error_message):
                     return failure_type
         return FailureType.UNKNOWN
-    
-    def classify_with_reason(self, error_message: str) -> Tuple[FailureType, str]:
+
+    def classify_with_reason(self, error_message: str) -> tuple[FailureType, str]:
         """Classify error and provide reasoning."""
         failure_type = self.classify(error_message)
-        
+
         reasons = {
             FailureType.ASSERTION_ERROR: "Test assertion failed - expected value mismatch",
             FailureType.VALUE_ERROR: "Invalid value provided to function",
@@ -108,9 +108,9 @@ class TestPilotClassifier:
             FailureType.ATTRIBUTE_ERROR: "Attribute access on invalid object",
             FailureType.UNKNOWN: "Unable to classify - manual review needed",
         }
-        
+
         return failure_type, reasons.get(failure_type, "Unknown failure type")
-    
+
     def get_triage_suggestion(self, failure_type: FailureType) -> str:
         """Get suggested triage actions for a failure type."""
         suggestions = {

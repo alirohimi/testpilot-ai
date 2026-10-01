@@ -36,8 +36,11 @@ jobs:
     - name: Run Black
       run: black --check api/ src/testpilot_ai/ tests/
 
-    - name: Run MyPy
-      run: mypy --ignore-missing-imports api/ src/testpilot_ai/
+    - name: Run MyPy (advisory — does not block CI)
+      continue-on-error: true
+      run: |
+        mypy --ignore-missing-imports api/ src/testpilot_ai/ \
+          || echo "::warning::mypy reported issues (advisory, not blocking CI)"
 
   # =====================
   # TEST

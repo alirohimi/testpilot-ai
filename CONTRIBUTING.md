@@ -15,8 +15,9 @@ Thanks for your interest in contributing to TestPilot AI! This document provides
 ### Code Style
 - Follow [PEP 8](https://pep8.org/) style guide
 - Use type hints where possible
-- Run `black src tests` before committing
-- Run `flake8 src tests` to check for style issues
+- Run `black api/ src/testpilot_ai/ tests/` before committing
+- Run `ruff check api/ src/testpilot_ai/ tests/` to check for style issues
+- Run `mypy --ignore-missing-imports api/ src/testpilot_ai/` for type checks
 
 ### Testing
 - Write tests for new features

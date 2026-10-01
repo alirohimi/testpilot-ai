@@ -212,11 +212,11 @@ class TestSessionManagement:
         token = response.json()["access_token"]
         
         # Decode and check expiration (should be 15 minutes from now)
-        import jwt
+        from jose import jwt as jose_jwt
         from api.auth import SECRET_KEY, ALGORITHM
-        
+
         try:
-            payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+            payload = jose_jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
             assert "exp" in payload
             assert "sub" in payload
         except Exception as e:

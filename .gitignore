@@ -52,3 +52,10 @@ Thumbs.db
 
 # GitHub
 !.github/
+
+# TestPilot local validation artifacts
+.pgdata/
+
+# Local SQLite dev DB (do not commit)
+testpilot.db
+supabase/.temp/

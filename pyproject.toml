@@ -16,7 +16,7 @@ dependencies = [
     "pydantic-settings>=2.0.0",
     "httpx>=0.27.0",
     "python-jose[cryptography]>=3.3.0",
-    "passlib[bcrypt]>=1.7.4",
+    "bcrypt>=4.0.0",
     "python-multipart>=0.0.9",
     "stripe>=10.0.0",
     "psycopg2-binary>=2.9.0",
@@ -46,7 +46,7 @@ prod = [
 ]
 
 [tool.setuptools.packages.find]
-where = ["."]
+where = [".", "src"]
 include = ["api*", "testpilot_ai*"]
 
 [tool.setuptools.package-data]

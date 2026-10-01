@@ -56,10 +56,17 @@ def client(test_session):
         finally:
             pass
 
+    # Save any existing override (e.g. the session-scoped e2e_server) so we
+    # don't clobber shared test state when this function-scoped fixture ends.
+    previous = app.dependency_overrides.get(get_db_session)
     app.dependency_overrides[get_db_session] = override_get_db
     with TestClient(app) as c:
         yield c
-    app.dependency_overrides.clear()
+    # Restore rather than clear, preserving any session-scoped override.
+    if previous is not None:
+        app.dependency_overrides[get_db_session] = previous
+    else:
+        app.dependency_overrides.pop(get_db_session, None)
 
 
 # ---------------------------------------------------------------------------

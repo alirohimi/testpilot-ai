@@ -5,6 +5,7 @@ from contextlib import contextmanager
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.pool import StaticPool
 
 from .models import Base
 
@@ -16,12 +17,22 @@ DATABASE_URL = os.getenv(
 # Use in-memory SQLite for testing if TESTING environment variable is set
 if os.getenv("TESTING"):
     DATABASE_URL = "sqlite:///:memory:"
-
-# Create engine — pool tuning only applies to Postgres, not SQLite
-_engine_kwargs: dict = {"pool_pre_ping": True}
-if "sqlite" not in DATABASE_URL:
-    _engine_kwargs.update(pool_size=10, max_overflow=20, pool_recycle=3600)
-engine = create_engine(DATABASE_URL, **_engine_kwargs)
+    # In-memory SQLite is a single shared DB instance: use StaticPool +
+    # check_same_thread=False so it can be used across the TestClient /
+    # e2e-server portal threads that the test suite spawns. Without this,
+    # the default SingletonThreadPool raises "SQLite objects created in a
+    # thread can only be used in that same thread" on the full suite.
+    engine = create_engine(
+        DATABASE_URL,
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+else:
+    # Create engine — pool tuning only applies to Postgres, not SQLite
+    _engine_kwargs: dict = {"pool_pre_ping": True}
+    if "sqlite" not in DATABASE_URL:
+        _engine_kwargs.update(pool_size=10, max_overflow=20, pool_recycle=3600)
+    engine = create_engine(DATABASE_URL, **_engine_kwargs)
 
 # Session factory
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)

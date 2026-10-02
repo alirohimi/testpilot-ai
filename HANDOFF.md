@@ -6,7 +6,7 @@ is done, tested, and pushed to `main` @ `93db45d`. This is the checklist to
 finish the last mile.
 
 **Status at handoff**
-- ✅ 131/131 tests passing, ruff + black clean, CI gates green
+- ✅ 131/131 tests passing, ruff + black clean, CI test job fixed (was red on `TESTING=1` SQLite threading — now green)
 - ✅ Stripe webhook fulfilment implemented (verified against Stripe API docs)
 - ✅ GDPR export/delete endpoints + tests
 - ✅ Structured logging, Sentry hook, CORS allowlist

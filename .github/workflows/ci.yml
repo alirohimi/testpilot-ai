@@ -81,6 +81,10 @@ jobs:
     needs: [test]
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    permissions:
+      # GITHUB_TOKEN defaults to no packages access — declare it so the
+      # image can actually be pushed to ghcr.io.
+      packages: write
     steps:
     - uses: actions/checkout@v4
 

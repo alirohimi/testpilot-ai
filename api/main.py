@@ -591,7 +591,7 @@ async def _analyze_failure(request: FailureCheck, api_key_info: dict, db=None) -
         "confidence": 0.9 if failure_type != FailureType.UNKNOWN else 0.3,
     }
 
-    if request.include_scrubbed and len(scrubbed) < len(request.error_message):
+    if request.include_scrubbed and scrubbed != request.error_message:
         result["scrubbed_error"] = scrubbed
 
     if llm_result:

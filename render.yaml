@@ -18,9 +18,10 @@ services:
     startCommand: uvicorn api.main:app --host 0.0.0.0 --port $PORT
     healthCheckPath: /health
     envVars:
-      # Supabase Postgres. Paste your Supabase connection string
-      # (psycopg2-compatible):
-      # postgresql://postgres.<ref>:<pass>@aws-0-<region>.pooler.supabase.com:6543/postgres
+      # Supabase Postgres (free-tier). Verified pooler URL (IPv4, ap-southeast-2):
+      # postgresql+psycopg2://testpilot_app.ijwpyikcbqdskuynwsuz:<ROLE_PASSWORD>@aws-0-ap-southeast-2.pooler.supabase.com:5432/postgres?sslmode=require
+      # NOTE: use port 5432 (transaction pooling), NOT 6543 (session pooling) —
+      # SQLAlchemy's connection pool needs transaction mode. Role password lives in .env only.
       - key: DATABASE_URL
         sync: false
       # App secret — auto-generated if left blank

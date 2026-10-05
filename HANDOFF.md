@@ -14,26 +14,35 @@ finish the last mile.
 
 ---
 
-## 1. Supabase — apply schema + create app role (one-time, ~5 min)
+## 1. Supabase — schema (DONE — verified live)
 
-I validated the schema on a real local Postgres, but I couldn't reach the live
-Supabase DB from here (IPv6-only route + no password). Do this once:
+The schema was applied to the live Supabase project via
+`npx supabase db query` (direct db host is IPv6-only/unreachable; the pooler
+host works). Verified: `testpilot_app` role + RLS policies on all 5 tables
+(`users`, `api_keys`, `subscriptions`, `usage_logs`, `failure_analyses`)
+exist in the live DB. E2E verified 8/8.
 
-1. Supabase dashboard → **SQL Editor** → paste the contents of
-   `supabase/migrations/0001_testpilot_schema.sql` → run.
-2. Confirm it created: `users`, `api_keys`, `subscriptions`, `usage_logs`,
-   `failure_analyses` + the `testpilot_app` role + RLS policies.
-3. In `.env` (and Render env vars), set:
-   ```
-   DATABASE_URL=postgresql://postgres.<project-ref>:<your-pw>@aws-0-<region>.pooler.supabase.com:5432/postgres
-   ```
+The `DATABASE_URL` to use in Render env vars:
+```
+DATABASE_URL=postgresql+psycopg2://testpilot_app.ijwpyikcbqdskuynwsuz:<ROLE_PASSWORD>@aws-0-ap-southeast-2.pooler.supabase.com:6543/postgres?sslmode=require
+```
+- **Port is 6543** (session pooling). NOT 5432 — that's transaction
+  pooling and errors on multi-statement transactions with SQLAlchemy's
+  pooled connections.
+- `<ROLE_PASSWORD>` is set in the migration file
+  `supabase/migrations/0001_testpilot_schema.sql`
+  (line: `ALTER ROLE testpilot_app WITH PASSWORD '...'`) and in the local
+  `.env` (gitignored, not in the repo).
+- Note: the role password currently exists in the committed migration file.
+  If you plan to open the repo publicly, rotate it in Supabase and update
+  both the migration and Render's `DATABASE_URL`.
 
 ## 2. Render — deploy (one-time, ~10 min)
 
 1. Render dashboard → **New → Web Service** → point at
    `alirohimi/testpilot-ai` (Render auto-reads `render.yaml`).
 2. Set env vars (the `sync: false` ones in `render.yaml`):
-   - `DATABASE_URL` (from step 1)
+   - `DATABASE_URL` (full value from step 1 — port 6543, session pooler)
    - `ALLOWED_ORIGINS` — your frontend origin(s), comma-separated. **Required**
      now that CORS is allowlisted.
    - `STRIPE_WEBHOOK_SECRET` (from step 3) if enabling payments

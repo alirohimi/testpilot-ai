@@ -2,7 +2,7 @@
 
 import hashlib
 import os
-from datetime import datetime
+from datetime import UTC, datetime
 
 from fastapi import Depends, FastAPI, HTTPException, Request, status
 from fastapi.middleware.cors import CORSMiddleware
@@ -373,7 +373,7 @@ async def export_user_data(
         .all()
     ]
     return {
-        "exported_at": datetime.utcnow().isoformat(),
+        "exported_at": datetime.now(UTC).isoformat(),
         "account": _row_to_dict(current_user),
         "api_keys": api_keys,
         "subscriptions": subscriptions,
@@ -622,14 +622,14 @@ async def check_failure(
     result = await _analyze_failure(request, api_key_info, db)
 
     request_id = hashlib.md5(
-        f"{request.error_message}{datetime.utcnow().isoformat()}".encode()
+        f"{request.error_message}{datetime.now(UTC).isoformat()}".encode()
     ).hexdigest()[:12]
 
     return ApiResponse(
         success=True,
         result=result,
         request_id=request_id,
-        timestamp=datetime.utcnow().isoformat(),
+        timestamp=datetime.now(UTC).isoformat(),
         plan=api_key_info["tier"],
     )
 
@@ -769,7 +769,7 @@ async def root():
 async def health():
     return {
         "status": "healthy",
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": datetime.now(UTC).isoformat(),
         "database": "connected",
         "redis": "connected" if redis_client else "not_configured",
     }

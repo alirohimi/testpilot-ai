@@ -1,5 +1,7 @@
 """Dependencies for rate limiting and usage tracking."""
 
+from datetime import UTC
+
 
 def get_tier_limit(tier: str) -> int:
     """Get monthly limit for a tier."""
@@ -15,7 +17,7 @@ def get_monthly_usage(db, api_key_id: int) -> int:
         from api.models import UsageLog
 
         # Get first day of current month
-        now = datetime.utcnow()
+        now = datetime.now(UTC)
         first_day = datetime(now.year, now.month, 1)
 
         # Count usage this month

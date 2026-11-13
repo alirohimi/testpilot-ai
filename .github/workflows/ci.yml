@@ -17,6 +17,7 @@ jobs:
   # =====================
   lint:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
     - uses: actions/checkout@v4
 
@@ -24,6 +25,8 @@ jobs:
       uses: actions/setup-python@v5
       with:
         python-version: ${{ env.PYTHON_VERSION }}
+        cache: pip
+        cache-dependency-path: pyproject.toml
 
     - name: Install dependencies
       run: |
@@ -48,6 +51,7 @@ jobs:
   test:
     runs-on: ubuntu-latest
     needs: [lint]
+    timeout-minutes: 15
     steps:
     - uses: actions/checkout@v4
 
@@ -55,6 +59,8 @@ jobs:
       uses: actions/setup-python@v5
       with:
         python-version: ${{ env.PYTHON_VERSION }}
+        cache: pip
+        cache-dependency-path: pyproject.toml
 
     - name: Install dependencies
       run: |
@@ -75,11 +81,12 @@ jobs:
         file: ./coverage.xml
 
   # =====================
-  # BUILD & PUSH DOCKER
+  # BUILD & PUSH DOCKER (main only)
   # =====================
   build:
     needs: [test]
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     permissions:
       # GITHUB_TOKEN defaults to no packages access — declare it so the
@@ -104,5 +111,28 @@ jobs:
         context: .
         push: true
         tags: ghcr.io/${{ github.repository }}:${{ github.sha }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+  # =====================
+  # BUILD DRY-RUN (PRs — catch Dockerfile breakage early)
+  # =====================
+  build-dry-run:
+    needs: [test]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    if: github.event_name == 'pull_request'
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Build Docker image (no push)
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        push: false
+        tags: ghcr.io/${{ github.repository }}:pr-${{ github.event.number }}
         cache-from: type=gha
         cache-to: type=gha,mode=max

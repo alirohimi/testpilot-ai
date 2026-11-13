@@ -1,7 +1,7 @@
 """JWT authentication for TestPilot AI."""
 
 import os
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 
 import bcrypt
 from fastapi import Depends, HTTPException, Request, status
@@ -44,13 +44,13 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None) -> s
 
     to_encode = data.copy()
     if expires_delta:
-        expire = datetime.utcnow() + expires_delta
+        expire = datetime.now(UTC) + expires_delta
     else:
-        expire = datetime.utcnow() + timedelta(minutes=15)
+        expire = datetime.now(UTC) + timedelta(minutes=15)
     to_encode.update(
         {
             "exp": expire,
-            "iat": datetime.utcnow(),
+            "iat": datetime.now(UTC),
             "jti": str(uuid.uuid4()),  # Unique token ID to prevent replay
         }
     )
@@ -166,7 +166,7 @@ async def get_api_key_user(
         )
 
     # Update last used
-    api_key.last_used_at = datetime.utcnow()
+    api_key.last_used_at = datetime.now(UTC)
     db.commit()
 
     return {

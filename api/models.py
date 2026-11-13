@@ -1,6 +1,6 @@
 """Database models for TestPilot AI SaaS."""
 
-from datetime import datetime
+from datetime import UTC, datetime
 
 from sqlalchemy import (
     Boolean,
@@ -30,8 +30,10 @@ class User(Base):
     full_name = Column(String(255), nullable=True)
     is_active = Column(Boolean, default=True)
     is_verified = Column(Boolean, default=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(UTC))
+    updated_at = Column(
+        DateTime, default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC)
+    )
 
     # Relationships
     api_keys = relationship(
@@ -64,7 +66,7 @@ class APIKey(Base):
     tier = Column(String(20), default="free")
     is_active = Column(Boolean, default=True)
     last_used_at = Column(DateTime, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(UTC))
 
     # Relationships
     user = relationship("User", back_populates="api_keys")
@@ -94,8 +96,10 @@ class Subscription(Base):
     current_period_start = Column(DateTime, nullable=True)
     current_period_end = Column(DateTime, nullable=True)
     cancel_at_period_end = Column(Boolean, default=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(UTC))
+    updated_at = Column(
+        DateTime, default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC)
+    )
 
     # Relationships
     user = relationship("User", back_populates="subscriptions")
@@ -108,9 +112,6 @@ class UsageLog(Base):
     """Tracks API usage for billing and analytics."""
 
     __tablename__ = "usage_logs"
-    __table_args__ = (
-        UniqueConstraint("api_key_id", "timestamp", name="uq_key_timestamp"),
-    )
 
     id = Column(Integer, primary_key=True, index=True)
     api_key_id = Column(
@@ -123,7 +124,7 @@ class UsageLog(Base):
     check_type = Column(String(50), default="standard")  # standard, llm, batch
     success = Column(Boolean, default=True)
     response_time_ms = Column(Integer, nullable=True)
-    timestamp = Column(DateTime, default=datetime.utcnow, index=True)
+    timestamp = Column(DateTime, default=lambda: datetime.now(UTC), index=True)
 
     # Relationships
     api_key = relationship("APIKey", back_populates="usage_logs")
@@ -151,7 +152,7 @@ class FailureAnalysis(Base):
     root_cause = Column(Text, nullable=True)
     confidence = Column(Float, default=0.0)
     llm_analyzed = Column(Boolean, default=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(UTC))
 
     def __repr__(self):
         return f"<FailureAnalysis {self.id} - {self.failure_type}>"
